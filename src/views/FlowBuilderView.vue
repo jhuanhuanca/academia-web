@@ -13,13 +13,35 @@ type NodeType =
   | 'deliver_course'
   | 'handoff'
 
+interface FlowButton {
+  id: string
+  label: string
+}
+
+/** Config del inspector — tipado para v-model (no usar unknown). */
+interface NodeConfig {
+  text?: string
+  footer?: string
+  buttons?: FlowButton[]
+  system_hint?: string
+  knowledge_tags?: string[]
+  min_confidence?: number
+  fallback_transition?: string
+  course_id?: number | null
+  provider?: string
+  caption?: string
+  ttl_minutes?: number
+  timeout_minutes?: number
+  success_text?: string
+}
+
 interface FlowNode {
   id: string
   type: NodeType
   name: string
   x: number
   y: number
-  config: Record<string, unknown>
+  config: NodeConfig
 }
 
 interface FlowEdge {
@@ -159,7 +181,7 @@ const newEdge = ref({
   trigger_key: '',
 })
 
-function defaultConfig(type: NodeType, courseId?: number): Record<string, unknown> {
+function defaultConfig(type: NodeType, courseId?: number): NodeConfig {
   switch (type) {
     case 'message':
       return { text: 'Escribe el mensaje de Luna…' }
@@ -198,10 +220,7 @@ function defaultConfig(type: NodeType, courseId?: number): Record<string, unknow
 }
 
 function ensureNodeConfig(node: FlowNode) {
-  const defaults = defaultConfig(node.type)
-  for (const [k, v] of Object.entries(defaults)) {
-    if (node.config[k] === undefined) node.config[k] = v
-  }
+  node.config = { ...defaultConfig(node.type), ...node.config }
 }
 
 function nodeCenter(id: string) {
@@ -309,7 +328,7 @@ function deleteSelectedNode() {
 
 function addButton() {
   if (!selected.value || selected.value.type !== 'buttons') return
-  const buttons = (selected.value.config.buttons as { id: string; label: string }[]) || []
+  const buttons = selected.value.config.buttons ?? []
   const n = buttons.length + 1
   buttons.push({ id: `btn_${n}`, label: `Opción ${n}` })
   selected.value.config.buttons = buttons
@@ -317,7 +336,7 @@ function addButton() {
 
 function removeButton(index: number) {
   if (!selected.value || selected.value.type !== 'buttons') return
-  const buttons = (selected.value.config.buttons as { id: string; label: string }[]) || []
+  const buttons = selected.value.config.buttons ?? []
   const removed = buttons.splice(index, 1)[0]
   selected.value.config.buttons = buttons
   if (removed?.id) {
@@ -329,7 +348,7 @@ function removeButton(index: number) {
 
 function updateButton(index: number, field: 'id' | 'label', value: string) {
   if (!selected.value || selected.value.type !== 'buttons') return
-  const buttons = (selected.value.config.buttons as { id: string; label: string }[]) || []
+  const buttons = selected.value.config.buttons ?? []
   if (!buttons[index]) return
   const oldId = buttons[index].id
   buttons[index][field] = value
@@ -577,7 +596,7 @@ async function loadFlowGraph(id: number) {
           node_key: string
           type: NodeType
           name: string
-          config: Record<string, unknown>
+          config: NodeConfig
           position_x: number
           position_y: number
         }>
