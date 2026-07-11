@@ -41,10 +41,14 @@ export async function api<T = unknown>(path: string, options: ApiOptions = {}): 
 
   const data = await response.json().catch(() => ({}))
   if (!response.ok) {
-    const message =
-      (data as { message?: string })?.message ||
-      (data as { errors?: Record<string, string[]> })?.errors?.email?.[0] ||
-      `Error ${response.status}`
+    const payload = data as {
+      message?: string
+      errors?: Record<string, string[]>
+    }
+    const firstError = payload.errors
+      ? Object.values(payload.errors).flat()[0]
+      : undefined
+    const message = firstError || payload.message || `Error ${response.status}`
     throw new ApiError(message, response.status, data)
   }
 

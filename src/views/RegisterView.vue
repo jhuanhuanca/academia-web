@@ -7,11 +7,15 @@ import { ApiError } from '@/api/client'
 const store = useAppStore()
 const router = useRouter()
 
+const name = ref('')
+const businessName = ref('')
 const email = ref('')
 const password = ref('')
+const passwordConfirmation = ref('')
 const showPassword = ref(false)
 const loading = ref(false)
 const error = ref('')
+const success = ref('')
 
 const moonStyle = computed(() => ({
   animation: 'ml-float 4.5s ease-in-out infinite',
@@ -19,16 +23,38 @@ const moonStyle = computed(() => ({
 
 async function onSubmit() {
   error.value = ''
-  if (!email.value || !password.value) {
-    error.value = 'Ingresa email y contraseña.'
+  success.value = ''
+  if (!name.value || !email.value || !password.value) {
+    error.value = 'Completa nombre, email y contraseña.'
     return
   }
+  if (password.value.length < 8) {
+    error.value = 'La contraseña debe tener al menos 8 caracteres.'
+    return
+  }
+  if (password.value !== passwordConfirmation.value) {
+    error.value = 'Las contraseñas no coinciden.'
+    return
+  }
+
   loading.value = true
   try {
-    await store.login(email.value, password.value)
-    router.push('/app')
+    const result = await store.register({
+      name: name.value,
+      email: email.value,
+      password: password.value,
+      password_confirmation: passwordConfirmation.value,
+      business_name: businessName.value || name.value,
+    })
+    if (result.pendingApproval) {
+      success.value = result.message
+      password.value = ''
+      passwordConfirmation.value = ''
+      return
+    }
+    router.push('/app/whatsapp')
   } catch (e) {
-    error.value = e instanceof ApiError ? e.message : 'No se pudo iniciar sesión. ¿API levantada?'
+    error.value = e instanceof ApiError ? e.message : 'No se pudo crear la cuenta. ¿API levantada?'
   } finally {
     loading.value = false
   }
@@ -45,27 +71,40 @@ async function onSubmit() {
       </div>
       <p class="tag">MarketLuna</p>
       <h1>
-        Vende con
-        <span class="accent">Luna</span>
+        Crea tu
+        <span class="accent">cuenta</span>
       </h1>
       <p class="lead">
-        Tu asistente de ventas por WhatsApp. Tú programas el flujo. Luna solo habla con lo que le
-        enseñaste.
+        Te damos tu propio espacio: WhatsApp, cursos, flujos y ventas solo tuyos. Nadie más los ve.
       </p>
       <ul class="perks">
-        <li>Flujos tipo n8n con mensajes y botones</li>
-        <li>QR de cobro y entrega de curso</li>
-        <li>Guía paso a paso para principiantes</li>
+        <li>Tu negocio aislado (tenant propio)</li>
+        <li>Conectas tu WhatsApp con QR</li>
+        <li>Vendés y cobrás a tu ritmo</li>
       </ul>
     </section>
 
     <section class="panel ml-card ml-rise ml-rise-delay-2">
       <header>
-        <h2>Entrar a MarketLuna</h2>
-        <p>Accede con tu cuenta</p>
+        <h2>Registrarse</h2>
+        <p>En menos de un minuto tienes tu panel listo</p>
       </header>
 
       <form class="form" @submit.prevent="onSubmit">
+        <label class="field">
+          <span class="ml-label">Tu nombre</span>
+          <input v-model="name" class="ml-input" type="text" autocomplete="name" placeholder="María Pérez" />
+        </label>
+        <label class="field">
+          <span class="ml-label">Nombre del negocio (opcional)</span>
+          <input
+            v-model="businessName"
+            class="ml-input"
+            type="text"
+            autocomplete="organization"
+            placeholder="Academia María"
+          />
+        </label>
         <label class="field">
           <span class="ml-label">Email</span>
           <input
@@ -83,8 +122,8 @@ async function onSubmit() {
               v-model="password"
               class="ml-input password-input"
               :type="showPassword ? 'text' : 'password'"
-              autocomplete="current-password"
-              placeholder="Tu contraseña"
+              autocomplete="new-password"
+              placeholder="Mínimo 8 caracteres"
             />
             <button
               class="toggle-pass"
@@ -97,16 +136,27 @@ async function onSubmit() {
             </button>
           </div>
         </label>
+        <label class="field">
+          <span class="ml-label">Confirmar contraseña</span>
+          <input
+            v-model="passwordConfirmation"
+            class="ml-input"
+            type="password"
+            autocomplete="new-password"
+            placeholder="Repite la contraseña"
+          />
+        </label>
 
         <p v-if="error" class="error">{{ error }}</p>
+        <p v-if="success" class="success">{{ success }}</p>
 
-        <button class="ml-btn ml-btn-primary submit" type="submit" :disabled="loading">
-          {{ loading ? 'Entrando…' : 'Entrar al dashboard' }}
+        <button class="ml-btn ml-btn-primary submit" type="submit" :disabled="loading || Boolean(success)">
+          {{ loading ? 'Creando cuenta…' : success ? 'Solicitud enviada' : 'Crear mi cuenta' }}
         </button>
 
         <p class="switch">
-          ¿No tienes cuenta?
-          <router-link to="/register">Regístrate gratis</router-link>
+          ¿Ya tienes cuenta?
+          <router-link to="/login">Inicia sesión</router-link>
         </p>
       </form>
     </section>
@@ -292,6 +342,16 @@ async function onSubmit() {
   color: var(--ml-wine);
   font-size: 0.85rem;
   font-weight: 600;
+}
+
+.success {
+  color: #1f6b3a;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.45;
+  background: rgba(31, 107, 58, 0.08);
+  border-radius: 10px;
+  padding: 0.75rem 0.9rem;
 }
 
 .switch {

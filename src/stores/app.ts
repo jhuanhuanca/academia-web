@@ -127,6 +127,43 @@ export const useAppStore = defineStore('app', () => {
     await refreshDashboardFlags()
   }
 
+  async function register(payload: {
+    name: string
+    email: string
+    password: string
+    password_confirmation: string
+    business_name?: string
+  }) {
+    const data = await api<{
+      pending_approval?: boolean
+      message?: string
+      token?: string
+      user?: AuthUser
+    }>('/auth/register', {
+      method: 'POST',
+      body: { ...payload, device_name: 'marketluna-web' },
+      token: null,
+    })
+
+    // Registro pendiente: no inicia sesión hasta que el admin apruebe
+    if (data.pending_approval || !data.token || !data.user) {
+      return {
+        pendingApproval: true as const,
+        message:
+          data.message ||
+          'Registro recibido. Espera la aprobación del administrador para iniciar sesión.',
+      }
+    }
+
+    localStorage.setItem('ml_onboarding', '0')
+    localStorage.removeItem('ml_guide_dismissed')
+    onboardingIndex.value = 0
+    guideOpen.value = true
+    persistAuth(data.token, data.user)
+    await refreshDashboardFlags()
+    return { pendingApproval: false as const, message: data.message || '' }
+  }
+
   async function logout() {
     try {
       if (token.value) {
@@ -196,6 +233,7 @@ export const useAppStore = defineStore('app', () => {
     currentStep,
     progress,
     login,
+    register,
     logout,
     refreshDashboardFlags,
     setOnboarding,
