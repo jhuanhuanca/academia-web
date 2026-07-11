@@ -31,6 +31,8 @@ interface NodeConfig {
   qr_media_asset_id?: number | null
   provider?: string
   caption?: string
+  instructions?: string
+  send_qr_image?: boolean
   ttl_minutes?: number
   timeout_minutes?: number
   success_text?: string
@@ -115,7 +117,7 @@ const palette: { type: NodeType; label: string; hint: string }[] = [
   { type: 'message', label: 'Mensaje', hint: 'Texto fijo' },
   { type: 'buttons', label: 'Botones', hint: 'Menú interactivo' },
   { type: 'ai_reply', label: 'Luna IA', hint: 'Respuesta con knowledge' },
-  { type: 'send_payment_qr', label: 'QR cobro', hint: 'Generar pago' },
+  { type: 'send_payment_qr', label: 'Cobro / pago', hint: 'QR, Tigo, Yape, banco' },
   { type: 'wait_payment', label: 'Esperar pago', hint: 'Validar cobro' },
   { type: 'deliver_course', label: 'Entregar', hint: 'Enviar curso' },
   { type: 'handoff', label: 'Humano', hint: 'Derivar agente' },
@@ -213,7 +215,9 @@ function defaultConfig(type: NodeType, courseId?: number): NodeConfig {
         course_id: courseId ?? courses.value[0]?.id ?? null,
         provider: 'manual_qr',
         ttl_minutes: 60,
-        caption: 'Escanea el QR para pagar.',
+        caption: '¡Excelente decisión! Aquí tienes los datos para pagar.',
+        instructions: '',
+        send_qr_image: true,
       }
     case 'wait_payment':
       return { timeout_minutes: 60 }
@@ -339,7 +343,7 @@ function deleteSelectedNode() {
 function addButton() {
   if (!selected.value || selected.value.type !== 'buttons') return
   const buttons = selected.value.config.buttons ?? []
-  if (buttons.length >= 3) return
+  if (buttons.length >= 6) return
   const n = buttons.length + 1
   buttons.push({ id: `btn_${n}`, label: `Opción ${n}` })
   selected.value.config.buttons = buttons
@@ -348,14 +352,43 @@ function addButton() {
 function applyPaymentMethodButtons() {
   if (!selected.value || selected.value.type !== 'buttons') return
   selected.value.config.text =
-    '📚 Material descargable\n🎥 Videoclases premium\n💻 Todo listo para empezar\n\n👇 ¿Cómo prefieres pagar?'
+    '💰 INVERSIÓN\n🔥 Precio promoción disponible\n\n👇 ¿Cómo prefieres realizar tu pago? 👇'
   selected.value.config.footer = 'MarketLuna'
   selected.value.config.buttons = [
     { id: 'qr', label: '💳 QR' },
     { id: 'tigo', label: '📱 Tigo Money' },
+    { id: 'yape', label: '💜 Yape' },
     { id: 'deposito', label: '🏦 Depósito' },
   ]
   selected.value.name = 'Métodos de pago'
+}
+
+function applyPaymentProviderDefaults() {
+  if (!selected.value || selected.value.type !== 'send_payment_qr') return
+  const provider = selected.value.config.provider || 'manual_qr'
+  selected.value.config.send_qr_image = provider === 'manual_qr'
+  if (provider === 'manual_qr') {
+    selected.value.config.caption =
+      selected.value.config.caption || '¡Excelente decisión! Enseguida te envío el QR de pago.'
+    selected.value.config.instructions = selected.value.config.instructions || ''
+    return
+  }
+  if (provider === 'tigo_money') {
+    selected.value.config.caption = '¡Excelente decisión! Paga por Tigo Money con estos datos:'
+    selected.value.config.instructions =
+      selected.value.config.instructions ||
+      '📱 *Tigo Money*\nNúmero: 70000000\nNombre: Tu Nombre Completo'
+  } else if (provider === 'yape') {
+    selected.value.config.caption = '¡Excelente decisión! Paga por Yape con estos datos:'
+    selected.value.config.instructions =
+      selected.value.config.instructions ||
+      '💜 *Yape*\nNúmero: 900000000\nNombre: Tu Nombre Completo'
+  } else if (provider === 'bank_deposit') {
+    selected.value.config.caption = '¡Excelente decisión! Realiza el depósito con estos datos:'
+    selected.value.config.instructions =
+      selected.value.config.instructions ||
+      '🏦 *Depósito bancario*\nBanco: Banco Solidario\nCuenta: 0000000000\nTitular: Tu Nombre Completo\nCI/NIT: 0000000'
+  }
 }
 
 function removeButton(index: number) {
@@ -1135,7 +1168,7 @@ watch(
         </label>
         <div class="buttons-edit">
           <div class="row-head">
-            <span class="ml-label">Botones (máx. 3)</span>
+            <span class="ml-label">Botones (máx. 6 · menú numerado)</span>
             <div class="row-actions">
               <button class="ml-btn ml-btn-ghost node-action" type="button" @click="applyPaymentMethodButtons">
                 Plantilla pago
@@ -1143,7 +1176,7 @@ watch(
               <button
                 class="ml-btn ml-btn-ghost node-action"
                 type="button"
-                :disabled="getNodeButtons(selected).length >= 3"
+                :disabled="getNodeButtons(selected).length >= 6"
                 @click="addButton"
               >
                 + Botón
@@ -1208,41 +1241,74 @@ watch(
         </label>
       </template>
 
-      <!-- PAYMENT QR -->
+      <!-- PAYMENT / COBRO -->
       <template v-if="selected.type === 'send_payment_qr'">
         <label>
           <span class="ml-label">Curso a cobrar</span>
           <select v-model="selected.config.course_id" class="ml-select">
             <option :value="null">— seleccionar —</option>
             <option v-for="c in courses" :key="c.id" :value="c.id">
-              {{ c.title }}{{ c.payment_qr_media_asset_id ? ' · QR✓' : ' · sin QR' }}
+              {{ c.title }}{{ c.payment_qr_media_asset_id ? ' · QR✓' : '' }}
             </option>
           </select>
         </label>
         <label>
-          <span class="ml-label">Caption del QR</span>
+          <span class="ml-label">Método de pago</span>
+          <select
+            v-model="selected.config.provider"
+            class="ml-select"
+            @change="applyPaymentProviderDefaults"
+          >
+            <option value="manual_qr">💳 QR (imagen)</option>
+            <option value="tigo_money">📱 Tigo Money (solo texto)</option>
+            <option value="yape">💜 Yape (solo texto)</option>
+            <option value="bank_deposit">🏦 Depósito bancario (solo texto)</option>
+          </select>
+        </label>
+        <label>
+          <span class="ml-label">Mensaje intro</span>
           <textarea
             v-model="selected.config.caption"
             class="ml-textarea"
             rows="2"
-            placeholder="Escanea el QR para pagar."
+            placeholder="¡Excelente decisión! Aquí tienes los datos…"
           />
         </label>
-        <label class="qr-upload-field">
-          <span class="ml-label">Imagen QR de cobro</span>
-          <input type="file" accept="image/png,image/jpeg,image/webp" @change="onPaymentQrUpload" />
-          <span class="hint">
-            {{
-              selected.config.qr_media_asset_id || selectedCourseHasQr
-                ? 'QR listo para enviar como imagen.'
-                : 'Sube aquí tu QR bancario (también puedes hacerlo en Cursos).'
-            }}
-          </span>
+        <label v-if="selected.config.provider !== 'manual_qr'">
+          <span class="ml-label">Datos de cuenta / número / titular</span>
+          <textarea
+            v-model="selected.config.instructions"
+            class="ml-textarea"
+            rows="4"
+            placeholder="Número, nombre, banco…"
+          />
+          <span class="hint">Este texto se envía al cliente. No hace falta QR.</span>
         </label>
+        <template v-if="selected.config.provider === 'manual_qr'">
+          <label class="check-row">
+            <input v-model="selected.config.send_qr_image" type="checkbox" />
+            <span>Enviar imagen QR</span>
+          </label>
+          <label class="qr-upload-field">
+            <span class="ml-label">Imagen QR de cobro</span>
+            <input type="file" accept="image/png,image/jpeg,image/webp" @change="onPaymentQrUpload" />
+            <span class="hint">
+              {{
+                selected.config.qr_media_asset_id || selectedCourseHasQr
+                  ? 'QR listo para enviar como imagen.'
+                  : 'Sube aquí tu QR bancario (también en Cursos).'
+              }}
+            </span>
+          </label>
+        </template>
         <label>
           <span class="ml-label">TTL minutos</span>
           <input v-model.number="selected.config.ttl_minutes" class="ml-input" type="number" min="5" />
         </label>
+        <p class="hint">
+          Después conecta este nodo a <strong>Esperar pago</strong>. El cliente debe enviar la
+          <em>foto del comprobante</em>.
+        </p>
       </template>
 
       <!-- WAIT PAYMENT -->
@@ -1356,6 +1422,13 @@ watch(
   color: var(--ml-muted);
   font-size: 0.72rem;
   line-height: 1.35;
+}
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.88rem;
+  font-weight: 600;
 }
 .tip-box {
   padding: 0.4rem;
