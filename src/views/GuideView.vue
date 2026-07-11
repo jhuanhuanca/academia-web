@@ -104,13 +104,13 @@ function go(index: number) {
 }
 
 .step.current {
-  border-color: rgba(8, 140, 255, 0.45);
-  box-shadow: 0 12px 30px rgba(8, 140, 255, 0.12);
+  border-color: rgba(10, 52, 148, 0.45);
+  box-shadow: 0 12px 30px rgba(10, 52, 148, 0.12);
 }
 
 .step.done .num {
-  background: rgba(14, 255, 249, 0.25);
-  color: #067a76;
+  background: rgba(127, 154, 82, 0.25);
+  color: #4f6a2e;
 }
 
 .num {

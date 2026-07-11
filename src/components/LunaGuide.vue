@@ -74,8 +74,8 @@ function next() {
   border-radius: 22px;
   background:
     linear-gradient(160deg, rgba(255, 251, 244, 0.95), rgba(255, 236, 214, 0.92)),
-    radial-gradient(circle at 100% 0%, rgba(14, 255, 249, 0.2), transparent 50%);
-  border: 1px solid rgba(134, 8, 0, 0.1);
+    radial-gradient(circle at 100% 0%, rgba(127, 154, 82, 0.2), transparent 50%);
+  border: 1px solid rgba(10, 52, 148, 0.1);
   box-shadow: var(--ml-shadow);
 }
 
@@ -121,7 +121,7 @@ header {
   place-items: center;
   background: linear-gradient(135deg, var(--ml-wine), var(--ml-ember));
   color: var(--ml-cream);
-  box-shadow: 0 8px 18px rgba(134, 8, 0, 0.25);
+  box-shadow: 0 8px 18px rgba(10, 52, 148, 0.25);
 }
 
 header strong {
@@ -137,7 +137,7 @@ header p {
 .bar {
   height: 6px;
   border-radius: 999px;
-  background: rgba(134, 8, 0, 0.08);
+  background: rgba(10, 52, 148, 0.08);
   overflow: hidden;
   margin-bottom: 0.9rem;
 }

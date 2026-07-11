@@ -230,12 +230,12 @@ h2 {
   margin-top: 0.75rem;
 }
 .done {
-  color: #067a76;
+  color: #4f6a2e;
   font-weight: 600;
   font-size: 0.85rem;
 }
 .ok {
-  color: #067a76;
+  color: #4f6a2e;
   font-weight: 600;
 }
 .err {
@@ -243,7 +243,7 @@ h2 {
   font-weight: 600;
 }
 .ml-badge-sky {
-  background: rgba(8, 140, 255, 0.12);
+  background: rgba(10, 52, 148, 0.12);
   color: var(--ml-sky);
 }
 </style>

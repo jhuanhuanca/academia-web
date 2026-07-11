@@ -142,7 +142,7 @@ onMounted(load)
   gap: 0.35rem;
 }
 .ok {
-  color: #067a76;
+  color: #4f6a2e;
   font-weight: 600;
 }
 .err {

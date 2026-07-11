@@ -271,19 +271,19 @@ code {
   height: 100%;
   object-fit: contain;
   border-radius: 12px;
-  background: #fffbf4;
+  background: #f3f5fb;
 }
 .qr-inner {
   height: 100%;
   border-radius: 12px;
-  background: repeating-linear-gradient(0deg, #fffbf4 0 8px, #ead7c8 8px 16px);
+  background: repeating-linear-gradient(0deg, #f3f5fb 0 8px, #ead7c8 8px 16px);
   display: grid;
   place-items: center;
   font-weight: 800;
   color: var(--ml-wine);
 }
 .ok {
-  color: #067a76;
+  color: #4f6a2e;
   font-weight: 600;
 }
 .err {
@@ -293,7 +293,7 @@ code {
 .result {
   max-height: 180px;
   overflow: auto;
-  background: rgba(134, 8, 0, 0.04);
+  background: rgba(10, 52, 148, 0.04);
   border-radius: 12px;
   padding: 0.75rem;
   font-size: 0.75rem;

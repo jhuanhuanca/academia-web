@@ -212,7 +212,7 @@ onMounted(load)
   gap: 0.7rem;
 }
 .ok {
-  color: #067a76;
+  color: #4f6a2e;
   font-weight: 600;
 }
 .err {
@@ -253,7 +253,7 @@ onMounted(load)
   padding: 0.35rem 0.7rem;
   border-radius: 10px;
   border: 1px solid var(--ml-line);
-  background: rgba(8, 140, 255, 0.08);
+  background: rgba(10, 52, 148, 0.08);
   color: var(--ml-sky);
   font-size: 0.78rem;
   font-weight: 700;

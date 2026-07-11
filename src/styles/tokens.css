@@ -1,17 +1,25 @@
 :root {
-  --ml-wine: #860800;
-  --ml-ember: #b33e00;
-  --ml-sky: #088cff;
-  --ml-aqua: #0efff9;
-  --ml-cream: #fffbf4;
+  /* Paleta MarketLuna — noche / luna */
+  --ml-blue: #0a3494;
+  --ml-magenta: #891468;
+  --ml-crimson: #b23832;
+  --ml-gold: #aa792e;
+  --ml-olive: #7f9a52;
 
-  --ml-wine-deep: #5c0500;
-  --ml-ink: #2a0a08;
-  --ml-muted: #7a534c;
-  --ml-line: rgba(134, 8, 0, 0.12);
-  --ml-glass: rgba(255, 251, 244, 0.72);
-  --ml-shadow: 0 18px 50px rgba(134, 8, 0, 0.14);
-  --ml-shadow-soft: 0 8px 24px rgba(134, 8, 0, 0.08);
+  /* Tokens semánticos (compatibles con el resto de la UI) */
+  --ml-wine: #0a3494;
+  --ml-ember: #891468;
+  --ml-sky: #0a3494;
+  --ml-aqua: #7f9a52;
+  --ml-cream: #f3f5fb;
+
+  --ml-wine-deep: #061f5c;
+  --ml-ink: #0b1430;
+  --ml-muted: #5a6480;
+  --ml-line: rgba(10, 52, 148, 0.14);
+  --ml-glass: rgba(243, 245, 251, 0.78);
+  --ml-shadow: 0 18px 50px rgba(10, 52, 148, 0.14);
+  --ml-shadow-soft: 0 8px 24px rgba(10, 52, 148, 0.08);
 
   --font-display: 'Outfit', system-ui, sans-serif;
   --font-body: 'Sora', system-ui, sans-serif;
@@ -47,10 +55,10 @@ body,
 body {
   min-height: 100vh;
   background:
-    radial-gradient(ellipse 80% 50% at 10% -10%, rgba(14, 255, 249, 0.22), transparent 55%),
-    radial-gradient(ellipse 60% 40% at 100% 0%, rgba(8, 140, 255, 0.18), transparent 50%),
-    radial-gradient(ellipse 50% 50% at 80% 100%, rgba(179, 62, 0, 0.12), transparent 55%),
-    linear-gradient(165deg, #fffbf4 0%, #ffe8d6 45%, #fff5ea 100%);
+    radial-gradient(ellipse 80% 50% at 8% -8%, rgba(10, 52, 148, 0.16), transparent 55%),
+    radial-gradient(ellipse 55% 40% at 100% 0%, rgba(137, 20, 104, 0.12), transparent 50%),
+    radial-gradient(ellipse 45% 45% at 85% 100%, rgba(127, 154, 82, 0.1), transparent 55%),
+    linear-gradient(165deg, #f3f5fb 0%, #e8ecf7 45%, #f7f4f8 100%);
   background-attachment: fixed;
 }
 
@@ -102,32 +110,32 @@ img {
 }
 
 .ml-btn-primary {
-  color: var(--ml-cream);
-  background: linear-gradient(135deg, var(--ml-wine) 0%, var(--ml-ember) 100%);
-  box-shadow: 0 10px 28px rgba(134, 8, 0, 0.28);
+  color: #f7f8fc;
+  background: linear-gradient(135deg, var(--ml-blue) 0%, var(--ml-magenta) 100%);
+  box-shadow: 0 10px 28px rgba(10, 52, 148, 0.3);
 }
 
 .ml-btn-primary:hover {
-  box-shadow: 0 14px 34px rgba(134, 8, 0, 0.35);
+  box-shadow: 0 14px 34px rgba(137, 20, 104, 0.32);
   transform: translateY(-1px);
 }
 
 .ml-btn-secondary {
-  color: var(--ml-wine);
-  background: rgba(255, 251, 244, 0.9);
+  color: var(--ml-blue);
+  background: rgba(243, 245, 251, 0.92);
   border: 1px solid var(--ml-line);
 }
 
 .ml-btn-ghost {
   background: transparent;
-  color: var(--ml-wine);
+  color: var(--ml-blue);
   padding: 0.55rem 0.9rem;
 }
 
 .ml-btn-sky {
-  color: #06263f;
-  background: linear-gradient(135deg, var(--ml-aqua), var(--ml-sky));
-  box-shadow: 0 10px 24px rgba(8, 140, 255, 0.28);
+  color: #f7f8fc;
+  background: linear-gradient(135deg, var(--ml-olive), #6a8640);
+  box-shadow: 0 10px 24px rgba(127, 154, 82, 0.28);
 }
 
 .ml-input,
@@ -135,7 +143,7 @@ img {
 .ml-textarea {
   width: 100%;
   border: 1px solid var(--ml-line);
-  background: rgba(255, 251, 244, 0.88);
+  background: rgba(255, 255, 255, 0.88);
   border-radius: var(--radius-sm);
   padding: 0.85rem 1rem;
   color: var(--ml-ink);
@@ -146,8 +154,8 @@ img {
 .ml-input:focus,
 .ml-select:focus,
 .ml-textarea:focus {
-  border-color: var(--ml-sky);
-  box-shadow: 0 0 0 3px rgba(8, 140, 255, 0.15);
+  border-color: var(--ml-blue);
+  box-shadow: 0 0 0 3px rgba(10, 52, 148, 0.15);
 }
 
 .ml-label {
@@ -161,7 +169,7 @@ img {
 .ml-card {
   background: var(--ml-glass);
   backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 251, 244, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.75);
   border-radius: var(--radius-lg);
   box-shadow: var(--ml-shadow-soft);
 }
@@ -174,18 +182,23 @@ img {
   font-weight: 600;
   padding: 0.28rem 0.65rem;
   border-radius: 999px;
-  background: rgba(8, 140, 255, 0.12);
-  color: var(--ml-sky);
+  background: rgba(10, 52, 148, 0.1);
+  color: var(--ml-blue);
 }
 
 .ml-badge-ok {
-  background: rgba(14, 255, 249, 0.2);
-  color: #067a76;
+  background: rgba(127, 154, 82, 0.18);
+  color: #4f6a2e;
 }
 
 .ml-badge-warn {
-  background: rgba(179, 62, 0, 0.14);
-  color: var(--ml-ember);
+  background: rgba(170, 121, 46, 0.16);
+  color: var(--ml-gold);
+}
+
+.ml-badge-danger {
+  background: rgba(178, 56, 50, 0.14);
+  color: var(--ml-crimson);
 }
 
 .ml-chip {
@@ -196,8 +209,8 @@ img {
   border-radius: 999px;
   font-size: 0.8rem;
   font-weight: 600;
-  background: rgba(134, 8, 0, 0.08);
-  color: var(--ml-wine);
+  background: rgba(137, 20, 104, 0.1);
+  color: var(--ml-magenta);
 }
 
 @keyframes ml-float {

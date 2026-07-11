@@ -28,6 +28,7 @@ interface NodeConfig {
   min_confidence?: number
   fallback_transition?: string
   course_id?: number | null
+  qr_media_asset_id?: number | null
   provider?: string
   caption?: string
   ttl_minutes?: number
@@ -55,6 +56,7 @@ interface FlowEdge {
 interface CourseOption {
   id: number
   title: string
+  payment_qr_media_asset_id?: number | null
 }
 
 interface FlowSummary {
@@ -133,17 +135,25 @@ const triggerTypeOptions = [
 ]
 
 const typeColor: Record<NodeType, string> = {
-  start: 'var(--ml-ember)',
-  message: 'var(--ml-wine)',
-  buttons: 'var(--ml-sky)',
-  ai_reply: '#069991',
-  send_payment_qr: 'var(--ml-ember)',
-  wait_payment: '#8a5a00',
-  deliver_course: '#067a76',
-  handoff: '#5c0500',
+  start: 'var(--ml-gold)',
+  message: 'var(--ml-blue)',
+  buttons: 'var(--ml-magenta)',
+  ai_reply: 'var(--ml-olive)',
+  send_payment_qr: 'var(--ml-crimson)',
+  wait_payment: 'var(--ml-gold)',
+  deliver_course: 'var(--ml-olive)',
+  handoff: 'var(--ml-wine-deep)',
 }
 
 const selected = computed(() => nodes.value.find((n) => n.id === selectedId.value) || null)
+
+const selectedCourseHasQr = computed(() => {
+  if (!selected.value || selected.value.type !== 'send_payment_qr') return false
+  if (selected.value.config.qr_media_asset_id) return true
+  const cid = selected.value.config.course_id
+  const course = courses.value.find((c) => c.id === cid)
+  return Boolean(course?.payment_qr_media_asset_id)
+})
 
 const outgoingEdges = computed(() => {
   if (!selected.value) return []
@@ -586,10 +596,55 @@ function closeCreateModal() {
 
 async function loadCourses() {
   try {
-    const res = await api<{ data: CourseOption[] }>('/courses')
-    courses.value = res.data.map((c) => ({ id: c.id, title: c.title }))
+    const res = await api<{ data: Array<{ id: number; title: string; payment_qr_media_asset_id?: number | null }> }>(
+      '/courses',
+    )
+    courses.value = res.data.map((c) => ({
+      id: c.id,
+      title: c.title,
+      payment_qr_media_asset_id: c.payment_qr_media_asset_id ?? null,
+    }))
   } catch {
     courses.value = []
+  }
+}
+
+async function onPaymentQrUpload(event: Event) {
+  if (!selected.value || selected.value.type !== 'send_payment_qr') return
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+
+  saveError.value = ''
+  try {
+    const fd = new FormData()
+    fd.append('file', file)
+    fd.append('purpose', 'payment-qr')
+    const uploaded = await api<{ data: { id: number } }>('/media-assets', {
+      method: 'POST',
+      formData: fd,
+    })
+    selected.value.config.qr_media_asset_id = uploaded.data.id
+
+    const courseId = selected.value.config.course_id
+    if (courseId) {
+      const courseFd = new FormData()
+      courseFd.append('file', file)
+      await api(`/courses/${courseId}/payment-qr`, {
+        method: 'POST',
+        formData: courseFd,
+      })
+      await loadCourses()
+    }
+
+    saved.value = true
+    setTimeout(() => {
+      saved.value = false
+    }, 2500)
+  } catch (e) {
+    saveError.value = e instanceof Error ? e.message : 'No se pudo subir el QR'
+  } finally {
+    input.value = ''
   }
 }
 
@@ -1159,7 +1214,9 @@ watch(
           <span class="ml-label">Curso a cobrar</span>
           <select v-model="selected.config.course_id" class="ml-select">
             <option :value="null">— seleccionar —</option>
-            <option v-for="c in courses" :key="c.id" :value="c.id">{{ c.title }}</option>
+            <option v-for="c in courses" :key="c.id" :value="c.id">
+              {{ c.title }}{{ c.payment_qr_media_asset_id ? ' · QR✓' : ' · sin QR' }}
+            </option>
           </select>
         </label>
         <label>
@@ -1171,7 +1228,17 @@ watch(
             placeholder="Escanea el QR para pagar."
           />
         </label>
-        <p class="hint">La imagen del QR se sube en <strong>Cursos → Subir QR de cobro</strong>.</p>
+        <label class="qr-upload-field">
+          <span class="ml-label">Imagen QR de cobro</span>
+          <input type="file" accept="image/png,image/jpeg,image/webp" @change="onPaymentQrUpload" />
+          <span class="hint">
+            {{
+              selected.config.qr_media_asset_id || selectedCourseHasQr
+                ? 'QR listo para enviar como imagen.'
+                : 'Sube aquí tu QR bancario (también puedes hacerlo en Cursos).'
+            }}
+          </span>
+        </label>
         <label>
           <span class="ml-label">TTL minutos</span>
           <input v-model.number="selected.config.ttl_minutes" class="ml-input" type="number" min="5" />
@@ -1293,7 +1360,7 @@ watch(
 .tip-box {
   padding: 0.4rem;
   border-radius: 8px;
-  background: rgba(134, 8, 0, 0.05);
+  background: rgba(10, 52, 148, 0.05);
 }
 .palette-item {
   text-align: left;
@@ -1304,7 +1371,7 @@ watch(
   cursor: pointer;
 }
 .palette-item:hover {
-  border-color: rgba(8, 140, 255, 0.45);
+  border-color: rgba(10, 52, 148, 0.45);
 }
 .palette-item strong {
   display: block;
@@ -1368,7 +1435,7 @@ watch(
   padding: 0.35rem 0.5rem;
 }
 .dirty-badge {
-  background: rgba(179, 62, 0, 0.12);
+  background: rgba(170, 121, 46, 0.12);
   color: var(--ml-ember);
   font-size: 0.68rem;
 }
@@ -1425,8 +1492,8 @@ watch(
   max-width: 100%;
   overflow: auto;
   background-image:
-    linear-gradient(rgba(134, 8, 0, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(134, 8, 0, 0.04) 1px, transparent 1px);
+    linear-gradient(rgba(10, 52, 148, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(10, 52, 148, 0.04) 1px, transparent 1px);
   background-size: 22px 22px;
 }
 .canvas-stage {
@@ -1469,7 +1536,7 @@ watch(
   touch-action: none;
 }
 .node.selected {
-  box-shadow: 0 0 0 2px rgba(14, 255, 249, 0.35), var(--ml-shadow);
+  box-shadow: 0 0 0 2px rgba(127, 154, 82, 0.35), var(--ml-shadow);
 }
 .dot {
   width: 8px;
@@ -1502,7 +1569,7 @@ watch(
   font-weight: 600;
   padding: 0.1rem 0.3rem;
   border-radius: 999px;
-  background: rgba(8, 140, 255, 0.12);
+  background: rgba(10, 52, 148, 0.12);
   color: var(--ml-sky);
 }
 .mini-text {
@@ -1513,7 +1580,7 @@ watch(
 }
 .status-ok {
   padding: 0.45rem 0.75rem;
-  color: #067a76;
+  color: #4f6a2e;
   font-weight: 600;
   font-size: 0.78rem;
 }
@@ -1607,7 +1674,7 @@ watch(
   font-size: 0.78rem;
   padding: 0.35rem 0.45rem;
   border-radius: 8px;
-  background: rgba(8, 140, 255, 0.06);
+  background: rgba(10, 52, 148, 0.06);
 }
 .add-edge {
   display: grid;
@@ -1624,7 +1691,7 @@ watch(
   overflow: auto;
   padding: 0.4rem;
   border-radius: 10px;
-  background: rgba(134, 8, 0, 0.03);
+  background: rgba(10, 52, 148, 0.03);
 }
 .bubble {
   max-width: 95%;
@@ -1634,7 +1701,7 @@ watch(
 }
 .bubble.luna {
   justify-self: start;
-  background: rgba(8, 140, 255, 0.12);
+  background: rgba(10, 52, 148, 0.12);
 }
 .bubble.user {
   justify-self: end;

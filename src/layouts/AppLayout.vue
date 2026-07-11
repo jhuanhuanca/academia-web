@@ -115,10 +115,10 @@ function logout() {
   flex-direction: column;
   gap: 1.4rem;
   background:
-    linear-gradient(180deg, rgba(134, 8, 0, 0.96), rgba(92, 5, 0, 0.98)),
-    radial-gradient(circle at 20% 10%, rgba(14, 255, 249, 0.18), transparent 45%);
+    linear-gradient(180deg, rgba(6, 31, 92, 0.98), rgba(10, 52, 148, 0.96)),
+    radial-gradient(circle at 20% 10%, rgba(137, 20, 104, 0.35), transparent 45%);
   color: var(--ml-cream);
-  border-right: 1px solid rgba(255, 251, 244, 0.08);
+  border-right: 1px solid rgba(243, 245, 251, 0.1);
 }
 
 .brand {
@@ -132,10 +132,10 @@ function logout() {
   width: 42px;
   height: 42px;
   border-radius: 14px;
-  background: linear-gradient(145deg, var(--ml-aqua), var(--ml-sky));
+  background: linear-gradient(145deg, var(--ml-magenta), var(--ml-gold));
   display: grid;
   place-items: center;
-  box-shadow: 0 8px 20px rgba(14, 255, 249, 0.25);
+  box-shadow: 0 8px 20px rgba(137, 20, 104, 0.35);
 }
 
 .moon {
@@ -143,7 +143,7 @@ function logout() {
   height: 18px;
   border-radius: 50%;
   background: var(--ml-cream);
-  box-shadow: 6px -3px 0 0 rgba(134, 8, 0, 0.85);
+  box-shadow: 6px -3px 0 0 rgba(6, 31, 92, 0.9);
 }
 
 .brand strong {
@@ -171,19 +171,19 @@ function logout() {
   gap: 0.7rem;
   padding: 0.72rem 0.85rem;
   border-radius: 12px;
-  color: rgba(255, 251, 244, 0.78);
+  color: rgba(243, 245, 251, 0.78);
   transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
 }
 
 .nav-item:hover {
-  background: rgba(255, 251, 244, 0.08);
+  background: rgba(243, 245, 251, 0.08);
   color: var(--ml-cream);
 }
 
 .nav-item.active {
-  background: linear-gradient(90deg, rgba(14, 255, 249, 0.22), rgba(8, 140, 255, 0.18));
+  background: linear-gradient(90deg, rgba(137, 20, 104, 0.35), rgba(10, 52, 148, 0.35));
   color: var(--ml-cream);
-  box-shadow: inset 0 0 0 1px rgba(14, 255, 249, 0.25);
+  box-shadow: inset 0 0 0 1px rgba(170, 121, 46, 0.35);
 }
 
 .nav-icon {
@@ -204,15 +204,15 @@ function logout() {
   font-size: 0.78rem;
   padding: 0.65rem 0.8rem;
   border-radius: 999px;
-  background: rgba(14, 255, 249, 0.12);
-  border: 1px solid rgba(14, 255, 249, 0.22);
+  background: rgba(127, 154, 82, 0.16);
+  border: 1px solid rgba(127, 154, 82, 0.28);
 }
 
 .dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--ml-aqua);
+  background: var(--ml-olive);
   animation: ml-pulse 1.8s ease infinite;
 }
 

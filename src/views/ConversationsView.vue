@@ -128,8 +128,8 @@ onMounted(loadChats)
   cursor: pointer;
 }
 .chat.active {
-  border-color: rgba(8, 140, 255, 0.45);
-  box-shadow: 0 0 0 2px rgba(14, 255, 249, 0.2);
+  border-color: rgba(10, 52, 148, 0.45);
+  box-shadow: 0 0 0 2px rgba(127, 154, 82, 0.2);
 }
 .chat span {
   color: var(--ml-muted);
@@ -163,7 +163,7 @@ header p,
   align-content: start;
   padding: 0.5rem;
   border-radius: 16px;
-  background: rgba(134, 8, 0, 0.03);
+  background: rgba(10, 52, 148, 0.03);
   overflow: auto;
 }
 .bubble {
@@ -173,7 +173,7 @@ header p,
   font-size: 0.92rem;
 }
 .bubble.luna {
-  background: linear-gradient(135deg, rgba(8, 140, 255, 0.12), rgba(14, 255, 249, 0.2));
+  background: linear-gradient(135deg, rgba(10, 52, 148, 0.12), rgba(127, 154, 82, 0.2));
   justify-self: start;
 }
 .bubble.user {

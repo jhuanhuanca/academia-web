@@ -202,7 +202,7 @@ onMounted(async () => {
   width: 150px;
   height: 150px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(14, 255, 249, 0.35), transparent 70%);
+  background: radial-gradient(circle, rgba(127, 154, 82, 0.35), transparent 70%);
   animation: ml-pulse 3.5s ease infinite;
 }
 .luna {
@@ -214,7 +214,7 @@ onMounted(async () => {
   font-size: 2rem;
   color: var(--ml-cream);
   background: linear-gradient(145deg, var(--ml-wine), var(--ml-ember));
-  box-shadow: 0 16px 30px rgba(134, 8, 0, 0.28);
+  box-shadow: 0 16px 30px rgba(10, 52, 148, 0.28);
   animation: ml-float 4s ease-in-out infinite;
   z-index: 1;
 }
@@ -296,12 +296,12 @@ li {
   display: grid;
   place-items: center;
   font-size: 0.75rem;
-  background: rgba(134, 8, 0, 0.08);
+  background: rgba(10, 52, 148, 0.08);
   color: var(--ml-muted);
 }
 .check.on {
-  background: rgba(14, 255, 249, 0.25);
-  color: #067a76;
+  background: rgba(127, 154, 82, 0.25);
+  color: #4f6a2e;
 }
 li button {
   border: none;
@@ -334,7 +334,7 @@ li button {
 }
 .shortcut:hover {
   transform: translateY(-2px);
-  border-color: rgba(8, 140, 255, 0.4);
+  border-color: rgba(10, 52, 148, 0.4);
 }
 .shortcut strong {
   display: block;

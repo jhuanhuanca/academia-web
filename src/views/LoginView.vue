@@ -130,7 +130,7 @@ async function onSubmit() {
   width: 280px;
   height: 280px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(14, 255, 249, 0.35), transparent 65%);
+  background: radial-gradient(circle, rgba(10, 52, 148, 0.28), transparent 65%);
   filter: blur(4px);
   animation: ml-pulse 5s ease infinite;
   pointer-events: none;
@@ -142,17 +142,17 @@ async function onSubmit() {
   height: 120px;
   margin-bottom: 1.5rem;
   border-radius: 50%;
-  background: linear-gradient(145deg, #fffbf4, #ffe0c2);
+  background: linear-gradient(145deg, #f7f8fc, #d9e0f5);
   box-shadow:
-    0 20px 50px rgba(134, 8, 0, 0.25),
-    inset -18px -10px 0 rgba(134, 8, 0, 0.08);
+    0 20px 50px rgba(10, 52, 148, 0.28),
+    inset -18px -10px 0 rgba(10, 52, 148, 0.08);
 }
 
 .glow {
   position: absolute;
   inset: -20%;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(14, 255, 249, 0.45), transparent 60%);
+  background: radial-gradient(circle, rgba(137, 20, 104, 0.35), transparent 60%);
   z-index: -1;
 }
 
@@ -163,7 +163,7 @@ async function onSubmit() {
   width: 70%;
   height: 70%;
   border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, transparent 42%, rgba(134, 8, 0, 0.55) 43%);
+  background: radial-gradient(circle at 30% 30%, transparent 42%, rgba(6, 31, 92, 0.55) 43%);
 }
 
 .tag {
@@ -173,7 +173,7 @@ async function onSubmit() {
   letter-spacing: 0.12em;
   text-transform: uppercase;
   font-size: 0.78rem;
-  color: var(--ml-ember);
+  color: var(--ml-magenta);
   margin-bottom: 0.8rem;
 }
 
@@ -185,7 +185,7 @@ async function onSubmit() {
 }
 
 .accent {
-  background: linear-gradient(120deg, var(--ml-sky), var(--ml-aqua), var(--ml-ember));
+  background: linear-gradient(120deg, var(--ml-blue), var(--ml-magenta), var(--ml-gold));
   background-size: 200% 200%;
   -webkit-background-clip: text;
   background-clip: text;
@@ -223,7 +223,7 @@ async function onSubmit() {
   width: 0.55rem;
   height: 0.55rem;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--ml-aqua), var(--ml-sky));
+  background: linear-gradient(135deg, var(--ml-blue), var(--ml-magenta));
 }
 
 .panel {
@@ -275,7 +275,7 @@ async function onSubmit() {
 }
 
 .toggle-pass:hover {
-  background: rgba(8, 140, 255, 0.1);
+  background: rgba(10, 52, 148, 0.1);
 }
 
 .submit {
