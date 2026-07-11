@@ -1061,7 +1061,8 @@ watch(
       <!-- BUTTONS -->
       <template v-if="selected.type === 'buttons'">
         <p class="hint">
-          WhatsApp muestra hasta <strong>3 botones</strong> tappable. Conecta cada id a un nodo
+          Con Baileys (QR) se envía un <strong>menú numerado</strong> (1, 2, 3) — funciona en
+          Web y celular. El cliente responde <code>1</code> o el nombre. Conecta cada id a un nodo
           (ej. <code>qr</code> → Enviar QR).
         </p>
         <label>
