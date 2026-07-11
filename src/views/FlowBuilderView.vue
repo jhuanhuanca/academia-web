@@ -329,9 +329,23 @@ function deleteSelectedNode() {
 function addButton() {
   if (!selected.value || selected.value.type !== 'buttons') return
   const buttons = selected.value.config.buttons ?? []
+  if (buttons.length >= 3) return
   const n = buttons.length + 1
   buttons.push({ id: `btn_${n}`, label: `Opción ${n}` })
   selected.value.config.buttons = buttons
+}
+
+function applyPaymentMethodButtons() {
+  if (!selected.value || selected.value.type !== 'buttons') return
+  selected.value.config.text =
+    '📚 Material descargable\n🎥 Videoclases premium\n💻 Todo listo para empezar\n\n👇 ¿Cómo prefieres pagar?'
+  selected.value.config.footer = 'MarketLuna'
+  selected.value.config.buttons = [
+    { id: 'qr', label: '💳 QR' },
+    { id: 'tigo', label: '📱 Tigo Money' },
+    { id: 'deposito', label: '🏦 Depósito' },
+  ]
+  selected.value.name = 'Métodos de pago'
 }
 
 function removeButton(index: number) {
@@ -1046,9 +1060,18 @@ watch(
 
       <!-- BUTTONS -->
       <template v-if="selected.type === 'buttons'">
+        <p class="hint">
+          WhatsApp muestra hasta <strong>3 botones</strong> tappable. Conecta cada id a un nodo
+          (ej. <code>qr</code> → Enviar QR).
+        </p>
         <label>
           <span class="ml-label">Texto del menú</span>
-          <textarea v-model="selected.config.text" class="ml-textarea" rows="3" />
+          <textarea
+            v-model="selected.config.text"
+            class="ml-textarea"
+            rows="4"
+            placeholder="Primera línea = título. El resto = descripción."
+          />
         </label>
         <label>
           <span class="ml-label">Footer</span>
@@ -1056,13 +1079,26 @@ watch(
         </label>
         <div class="buttons-edit">
           <div class="row-head">
-            <span class="ml-label">Botones</span>
-            <button class="ml-btn ml-btn-ghost node-action" type="button" @click="addButton">+ Botón</button>
+            <span class="ml-label">Botones (máx. 3)</span>
+            <div class="row-actions">
+              <button class="ml-btn ml-btn-ghost node-action" type="button" @click="applyPaymentMethodButtons">
+                Plantilla pago
+              </button>
+              <button
+                class="ml-btn ml-btn-ghost node-action"
+                type="button"
+                :disabled="getNodeButtons(selected).length >= 3"
+                @click="addButton"
+              >
+                + Botón
+              </button>
+            </div>
           </div>
           <div v-for="(b, i) in getNodeButtons(selected)" :key="b.id" class="button-card">
             <input
               class="ml-input"
-              placeholder="Etiqueta visible"
+              placeholder="Etiqueta (máx 20)"
+              maxlength="20"
               :value="b.label"
               @input="onButtonLabelInput(i, $event)"
             />
@@ -1127,8 +1163,14 @@ watch(
         </label>
         <label>
           <span class="ml-label">Caption del QR</span>
-          <textarea v-model="selected.config.caption" class="ml-textarea" rows="2" />
+          <textarea
+            v-model="selected.config.caption"
+            class="ml-textarea"
+            rows="2"
+            placeholder="Escanea el QR para pagar."
+          />
         </label>
+        <p class="hint">La imagen del QR se sube en <strong>Cursos → Subir QR de cobro</strong>.</p>
         <label>
           <span class="ml-label">TTL minutos</span>
           <input v-model.number="selected.config.ttl_minutes" class="ml-input" type="number" min="5" />
@@ -1513,6 +1555,13 @@ watch(
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+.row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
 }
 .button-card {
   display: grid;

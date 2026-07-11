@@ -4,6 +4,7 @@ type ApiOptions = {
   method?: string
   body?: unknown
   token?: string | null
+  formData?: FormData
 }
 
 export class ApiError extends Error {
@@ -21,14 +22,21 @@ export async function api<T = unknown>(path: string, options: ApiOptions = {}): 
   const token = options.token ?? localStorage.getItem('ml_token')
   const headers: Record<string, string> = {
     Accept: 'application/json',
-    'Content-Type': 'application/json',
   }
   if (token) headers.Authorization = `Bearer ${token}`
+
+  let body: BodyInit | undefined
+  if (options.formData) {
+    body = options.formData
+  } else if (options.body !== undefined) {
+    headers['Content-Type'] = 'application/json'
+    body = JSON.stringify(options.body)
+  }
 
   const response = await fetch(`${API_URL}${path}`, {
     method: options.method || 'GET',
     headers,
-    body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+    body,
   })
 
   const data = await response.json().catch(() => ({}))
