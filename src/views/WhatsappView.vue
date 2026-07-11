@@ -24,7 +24,7 @@ const simPhone = ref('+584120000000')
 const simText = ref('hola')
 const simResult = ref('')
 
-const demoReceiptBase64 =
+const sampleReceiptBase64 =
   'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
 
 const qrSrc = computed(() => {
@@ -87,23 +87,6 @@ async function refresh() {
   }
 }
 
-async function connectDemo() {
-  if (!current.value) return
-  busy.value = true
-  try {
-    const res = await api<{ data: Instance }>(
-      `/whatsapp-instances/${current.value.id}/connect-demo`,
-      { method: 'POST' },
-    )
-    current.value = res.data
-    await store.refreshDashboardFlags()
-    store.nextOnboarding()
-    info.value = 'Demo marcada como open (sin Evolution).'
-  } finally {
-    busy.value = false
-  }
-}
-
 async function simulate(body?: {
   text?: string
   button_id?: string
@@ -124,14 +107,14 @@ async function simulate(body?: {
           button_id: body?.button_id,
           type: body?.type,
           receipt_base64: body?.receipt_base64,
-          wa_name: 'Lead Demo',
+          wa_name: 'Cliente de prueba',
         },
       },
     )
     simResult.value = JSON.stringify(res.data, null, 2)
-    info.value = 'Mensaje simulado procesado.'
+    info.value = 'Mensaje de prueba procesado.'
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Fallo simulación'
+    error.value = e instanceof Error ? e.message : 'Fallo la prueba'
   } finally {
     busy.value = false
   }
@@ -140,8 +123,8 @@ async function simulate(body?: {
 async function simulatePurchaseFlow() {
   await simulate({ text: 'hola' })
   await simulate({ button_id: 'buy' })
-  await simulate({ type: 'image', text: '[comprobante]', receipt_base64: demoReceiptBase64 })
-  info.value = 'Flujo completo simulado: menú → compra → comprobante. Revisa Ventas y tu email.'
+  await simulate({ type: 'image', text: '[comprobante]', receipt_base64: sampleReceiptBase64 })
+  info.value = 'Flujo completo: menú → compra → comprobante. Revisa Ventas y tu email.'
 }
 
 onMounted(load)
@@ -191,9 +174,6 @@ onMounted(load)
           </button>
           <button class="ml-btn ml-btn-secondary" type="button" :disabled="busy || !current" @click="refresh">
             Refrescar estado
-          </button>
-          <button class="ml-btn ml-btn-ghost" type="button" :disabled="busy || !current" @click="connectDemo">
-            Solo demo local
           </button>
         </div>
         <p v-if="info" class="ok">{{ info }}</p>

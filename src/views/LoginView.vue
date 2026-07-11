@@ -7,8 +7,9 @@ import { ApiError } from '@/api/client'
 const store = useAppStore()
 const router = useRouter()
 
-const email = ref('admin@marketluna.local')
-const password = ref('password')
+const email = ref('')
+const password = ref('')
+const showPassword = ref(false)
 const loading = ref(false)
 const error = ref('')
 
@@ -61,22 +62,40 @@ async function onSubmit() {
     <section class="panel ml-card ml-rise ml-rise-delay-2">
       <header>
         <h2>Entrar a MarketLuna</h2>
-        <p>API real · usuario seed: admin@marketluna.local</p>
+        <p>Accede con tu cuenta de administrador</p>
       </header>
 
       <form class="form" @submit.prevent="onSubmit">
         <label class="field">
           <span class="ml-label">Email</span>
-          <input v-model="email" class="ml-input" type="email" autocomplete="username" />
+          <input
+            v-model="email"
+            class="ml-input"
+            type="email"
+            autocomplete="username"
+            placeholder="tu@email.com"
+          />
         </label>
         <label class="field">
           <span class="ml-label">Contraseña</span>
-          <input
-            v-model="password"
-            class="ml-input"
-            type="password"
-            autocomplete="current-password"
-          />
+          <div class="password-wrap">
+            <input
+              v-model="password"
+              class="ml-input password-input"
+              :type="showPassword ? 'text' : 'password'"
+              autocomplete="current-password"
+              placeholder="Tu contraseña"
+            />
+            <button
+              class="toggle-pass"
+              type="button"
+              :aria-label="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+              :aria-pressed="showPassword"
+              @click="showPassword = !showPassword"
+            >
+              {{ showPassword ? 'Ocultar' : 'Ver' }}
+            </button>
+          </div>
         </label>
 
         <p v-if="error" class="error">{{ error }}</p>
@@ -85,11 +104,6 @@ async function onSubmit() {
           {{ loading ? 'Entrando…' : 'Entrar al dashboard' }}
         </button>
       </form>
-
-      <footer>
-        <span class="ml-badge ml-badge-ok">API + Sanctum</span>
-        <span class="hint">password</span>
-      </footer>
     </section>
   </div>
 </template>
@@ -236,6 +250,34 @@ async function onSubmit() {
   gap: 1rem;
 }
 
+.password-wrap {
+  position: relative;
+  display: grid;
+}
+
+.password-input {
+  padding-right: 4.5rem;
+}
+
+.toggle-pass {
+  position: absolute;
+  right: 0.45rem;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 0;
+  background: transparent;
+  color: var(--ml-sky);
+  font-weight: 700;
+  font-size: 0.82rem;
+  cursor: pointer;
+  padding: 0.35rem 0.55rem;
+  border-radius: 8px;
+}
+
+.toggle-pass:hover {
+  background: rgba(8, 140, 255, 0.1);
+}
+
 .submit {
   width: 100%;
   margin-top: 0.35rem;
@@ -245,19 +287,6 @@ async function onSubmit() {
   color: var(--ml-wine);
   font-size: 0.85rem;
   font-weight: 600;
-}
-
-footer {
-  margin-top: 1.3rem;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem;
-  align-items: center;
-}
-
-.hint {
-  font-size: 0.78rem;
-  color: var(--ml-muted);
 }
 
 @media (max-width: 900px) {

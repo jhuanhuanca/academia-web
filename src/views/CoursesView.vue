@@ -19,11 +19,11 @@ const courses = ref<Course[]>([])
 const error = ref('')
 
 const form = reactive({
-  title: 'Curso Demo de Ventas',
+  title: '',
   price: 49,
   currency: 'USD',
-  deliveryUrl: 'https://ejemplo.com/curso-demo',
-  description: 'Curso para vender por WhatsApp con guiones y cierre.',
+  deliveryUrl: '',
+  description: '',
 })
 
 async function load() {
@@ -74,7 +74,7 @@ onMounted(load)
         <h2>Crear curso</h2>
         <label>
           <span class="ml-label">Título</span>
-          <input v-model="form.title" class="ml-input" />
+          <input v-model="form.title" class="ml-input" placeholder="Nombre del curso" />
         </label>
         <div class="row">
           <label>
@@ -92,11 +92,11 @@ onMounted(load)
         </div>
         <label>
           <span class="ml-label">Link de entrega</span>
-          <input v-model="form.deliveryUrl" class="ml-input" />
+          <input v-model="form.deliveryUrl" class="ml-input" placeholder="https://..." />
         </label>
         <label>
           <span class="ml-label">Descripción</span>
-          <textarea v-model="form.description" class="ml-textarea" rows="4" />
+          <textarea v-model="form.description" class="ml-textarea" rows="4" placeholder="Qué incluye el curso" />
         </label>
         <button class="ml-btn ml-btn-primary" type="submit">Guardar en API</button>
         <p v-if="saved" class="ok">✓ Curso guardado.</p>
