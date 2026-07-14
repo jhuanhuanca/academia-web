@@ -2,7 +2,7 @@
 import { reactive } from 'vue'
 
 const form = reactive({
-  brand: 'MarketLuna',
+  brand: 'LunaMarket',
   iaName: 'Luna',
   provider: 'manual_qr',
   timezone: 'America/Caracas',

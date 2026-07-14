@@ -47,7 +47,7 @@ async function save() {
         delivery_type: 'link',
         delivery_payload: {
           url: form.deliveryUrl,
-          instructions: 'Usa este link para acceder al curso.',
+          instructions: 'Usa este link para acceder a tu compra.',
         },
         description: form.description,
         is_active: true,
@@ -97,19 +97,19 @@ onMounted(load)
 <template>
   <div class="page">
     <section class="ml-card tip ml-rise">
-      <strong>Tip de Luna:</strong>
+      <strong>Tip SaaS:</strong>
       <span>
-        Sube la imagen de tu QR bancario en cada curso. Al cobrar, WhatsApp enviará esa foto al
-        cliente.
+        Cada negocio carga sus productos aquí. El bot muestra el catálogo con botones (1, 2, 3) y
+        cobra el que el cliente elija. Sube un QR de cobro por producto si usas pago QR.
       </span>
     </section>
 
     <div class="grid">
       <form class="ml-card form ml-rise" @submit.prevent="save">
-        <h2>Crear curso</h2>
+        <h2>Crear producto</h2>
         <label>
-          <span class="ml-label">Título</span>
-          <input v-model="form.title" class="ml-input" placeholder="Nombre del curso" required />
+          <span class="ml-label">Nombre</span>
+          <input v-model="form.title" class="ml-input" placeholder="Ej: Mentoría 1:1" required />
         </label>
         <div class="row">
           <label>
@@ -121,6 +121,7 @@ onMounted(load)
             <select v-model="form.currency" class="ml-select">
               <option>USD</option>
               <option>BOB</option>
+              <option>PEN</option>
               <option>VES</option>
               <option>EUR</option>
             </select>
@@ -136,17 +137,17 @@ onMounted(load)
             v-model="form.description"
             class="ml-textarea"
             rows="4"
-            placeholder="Qué incluye el curso"
+            placeholder="Qué incluye el producto"
           />
         </label>
-        <button class="ml-btn ml-btn-primary" type="submit">Guardar curso</button>
-        <p v-if="saved" class="ok">✓ Curso guardado.</p>
+        <button class="ml-btn ml-btn-primary" type="submit">Guardar producto</button>
+        <p v-if="saved" class="ok">✓ Producto guardado.</p>
         <p v-if="error" class="err">{{ error }}</p>
         <p v-if="qrMsg" class="ok">{{ qrMsg }}</p>
       </form>
 
       <section class="ml-card list ml-rise ml-rise-delay-2">
-        <h2>Tus cursos</h2>
+        <h2>Tus productos</h2>
         <article v-for="course in courses" :key="course.id" class="item">
           <div class="item-main">
             <strong>{{ course.title }}</strong>
@@ -168,7 +169,7 @@ onMounted(load)
           </div>
           <span class="ml-badge ml-badge-ok">{{ course.is_active ? 'Activo' : 'Off' }}</span>
         </article>
-        <p v-if="!courses.length" class="empty">Aún no hay cursos.</p>
+        <p v-if="!courses.length" class="empty">Aún no hay productos. Crea el primero.</p>
       </section>
     </div>
   </div>
@@ -194,56 +195,46 @@ onMounted(load)
   grid-template-columns: 1.2fr 0.8fr;
   gap: 1rem;
 }
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
 .form,
 .list {
-  padding: 1.2rem;
-}
-.form {
+  padding: 1.25rem;
   display: grid;
   gap: 0.85rem;
 }
-.form h2,
-.list h2 {
-  color: var(--ml-wine-deep);
-}
 .row {
   display: grid;
-  grid-template-columns: 1fr 120px;
-  gap: 0.7rem;
-}
-.ok {
-  color: #4f6a2e;
-  font-weight: 600;
-}
-.err {
-  color: var(--ml-wine);
-  font-weight: 600;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
 }
 .item {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  gap: 0.8rem;
+  gap: 0.75rem;
   padding: 0.85rem 0;
-  border-bottom: 1px solid var(--ml-line);
+  border-bottom: 1px solid color-mix(in srgb, var(--ml-wine) 12%, transparent);
+}
+.item:last-child {
+  border-bottom: 0;
 }
 .item-main {
   display: grid;
   gap: 0.35rem;
-  min-width: 0;
 }
-.item p,
-.empty,
-.muted {
+.item p {
+  margin: 0;
   color: var(--ml-muted);
-  font-size: 0.85rem;
+  font-size: 0.9rem;
 }
 .qr-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.45rem;
   align-items: center;
-  margin-top: 0.25rem;
+  gap: 0.5rem;
 }
 .qr-upload {
   position: relative;
@@ -251,12 +242,9 @@ onMounted(load)
   display: inline-flex;
   align-items: center;
   padding: 0.35rem 0.7rem;
-  border-radius: 10px;
-  border: 1px solid var(--ml-line);
-  background: rgba(10, 52, 148, 0.08);
-  color: var(--ml-sky);
-  font-size: 0.78rem;
-  font-weight: 700;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--ml-wine) 25%, transparent);
+  font-size: 0.8rem;
   cursor: pointer;
 }
 .qr-upload input {
@@ -265,10 +253,19 @@ onMounted(load)
   opacity: 0;
   cursor: pointer;
 }
-@media (max-width: 900px) {
-  .grid,
-  .row {
-    grid-template-columns: 1fr;
-  }
+.muted {
+  color: var(--ml-muted);
+  font-size: 0.8rem;
+}
+.empty {
+  color: var(--ml-muted);
+}
+.ok {
+  color: var(--ml-olive);
+  margin: 0;
+}
+.err {
+  color: var(--ml-crimson);
+  margin: 0;
 }
 </style>

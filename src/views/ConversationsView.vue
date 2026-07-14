@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { api } from '@/api/client'
+import DatePeriodFilter, { type Period } from '@/components/DatePeriodFilter.vue'
 
 type Chat = {
   id: number
@@ -21,10 +22,24 @@ const messages = ref<Msg[]>([])
 const selected = ref<Chat | null>(null)
 const loading = ref(true)
 
+const period = ref<Period>('today')
+const date = ref('')
+const month = ref('')
+
+function queryParams() {
+  const q = new URLSearchParams({ period: period.value })
+  if (period.value === 'day' && date.value) q.set('date', date.value)
+  if (period.value === 'month' && month.value) q.set('month', month.value)
+  return q.toString()
+}
+
 async function loadChats() {
   loading.value = true
+  selectedId.value = null
+  selected.value = null
+  messages.value = []
   try {
-    const res = await api<{ data: Chat[] }>('/conversations')
+    const res = await api<{ data: Chat[] }>(`/conversations?${queryParams()}`)
     chats.value = res.data
     if (res.data[0]) {
       await openChat(res.data[0])
@@ -51,8 +66,14 @@ onMounted(loadChats)
   <div class="page">
     <aside class="ml-card list ml-rise">
       <h2>Conversaciones</h2>
+      <DatePeriodFilter
+        v-model:period="period"
+        v-model:date="date"
+        v-model:month="month"
+        @change="loadChats"
+      />
       <p v-if="loading" class="empty">Cargando…</p>
-      <p v-else-if="!chats.length" class="empty">Aún no hay chats. Simula uno en WhatsApp.</p>
+      <p v-else-if="!chats.length" class="empty">No hay chats en este período.</p>
       <button
         v-for="chat in chats"
         :key="chat.id"
@@ -100,88 +121,77 @@ onMounted(loadChats)
 <style scoped>
 .page {
   display: grid;
-  grid-template-columns: 320px 1fr;
+  grid-template-columns: minmax(260px, 320px) 1fr;
   gap: 1rem;
-  min-height: 560px;
+  min-height: 70vh;
 }
 .list,
 .thread {
   padding: 1rem;
-}
-.list {
   display: grid;
+  gap: 0.75rem;
   align-content: start;
-  gap: 0.55rem;
 }
 .list h2,
 .thread h2 {
   color: var(--ml-wine-deep);
+  margin: 0;
 }
 .chat {
-  text-align: left;
-  border: 1px solid var(--ml-line);
-  background: rgba(255, 251, 244, 0.75);
-  border-radius: 14px;
-  padding: 0.75rem;
   display: grid;
   gap: 0.15rem;
+  text-align: left;
+  border: 1px solid var(--ml-line);
+  background: var(--ml-input-bg);
+  color: var(--ml-ink);
+  border-radius: 12px;
+  padding: 0.7rem 0.8rem;
   cursor: pointer;
+  font: inherit;
 }
 .chat.active {
-  border-color: rgba(10, 52, 148, 0.45);
-  box-shadow: 0 0 0 2px rgba(127, 154, 82, 0.2);
+  border-color: var(--ml-aqua);
+  box-shadow: 0 0 0 1px var(--ml-aqua);
 }
-.chat span {
+.chat span,
+.chat em,
+.empty,
+header p {
   color: var(--ml-muted);
-  font-size: 0.85rem;
-}
-.chat em {
+  font-size: 0.82rem;
   font-style: normal;
-  font-size: 0.72rem;
-  color: var(--ml-sky);
-  font-weight: 600;
 }
-.thread {
-  display: grid;
-  grid-template-rows: auto 1fr;
-  gap: 0.8rem;
-}
-header {
+.thread header {
   display: flex;
   justify-content: space-between;
-  gap: 0.8rem;
-  align-items: center;
-}
-header p,
-.empty {
-  color: var(--ml-muted);
-  font-size: 0.85rem;
+  gap: 0.75rem;
+  align-items: flex-start;
 }
 .messages {
   display: grid;
   gap: 0.55rem;
-  align-content: start;
-  padding: 0.5rem;
-  border-radius: 16px;
-  background: rgba(10, 52, 148, 0.03);
+  max-height: 60vh;
   overflow: auto;
+  padding-right: 0.25rem;
 }
 .bubble {
-  max-width: 75%;
-  padding: 0.7rem 0.9rem;
-  border-radius: 16px;
-  font-size: 0.92rem;
-}
-.bubble.luna {
-  background: linear-gradient(135deg, rgba(10, 52, 148, 0.12), rgba(127, 154, 82, 0.2));
-  justify-self: start;
+  max-width: 85%;
+  padding: 0.65rem 0.85rem;
+  border-radius: 14px;
+  white-space: pre-wrap;
+  color: var(--ml-ink);
 }
 .bubble.user {
-  background: linear-gradient(135deg, var(--ml-wine), var(--ml-ember));
-  color: var(--ml-cream);
-  justify-self: end;
+  justify-self: start;
+  background: var(--ml-input-bg);
+  border: 1px solid var(--ml-line);
 }
-@media (max-width: 900px) {
+.bubble.luna {
+  justify-self: end;
+  background: rgba(0, 198, 171, 0.14);
+  border: 1px solid rgba(0, 198, 171, 0.28);
+}
+@media (max-width: 860px) {
   .page {
     grid-template-columns: 1fr;
   }

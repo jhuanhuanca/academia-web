@@ -72,11 +72,10 @@ function next() {
   z-index: 40;
   padding: 1rem;
   border-radius: 22px;
-  background:
-    linear-gradient(160deg, rgba(255, 251, 244, 0.95), rgba(255, 236, 214, 0.92)),
-    radial-gradient(circle at 100% 0%, rgba(127, 154, 82, 0.2), transparent 50%);
-  border: 1px solid rgba(10, 52, 148, 0.1);
+  background: var(--ml-card);
+  border: 1px solid var(--ml-line);
   box-shadow: var(--ml-shadow);
+  color: var(--ml-ink);
 }
 
 .guide.mini {
@@ -119,14 +118,14 @@ header {
   border-radius: 14px;
   display: grid;
   place-items: center;
-  background: linear-gradient(135deg, var(--ml-wine), var(--ml-ember));
-  color: var(--ml-cream);
-  box-shadow: 0 8px 18px rgba(10, 52, 148, 0.25);
+  background: linear-gradient(135deg, var(--ml-c3), var(--ml-c5));
+  color: #05323a;
+  box-shadow: 0 8px 18px rgba(0, 198, 171, 0.25);
 }
 
 header strong {
   display: block;
-  color: var(--ml-wine);
+  color: var(--ml-wine-deep);
 }
 
 header p {
@@ -137,7 +136,7 @@ header p {
 .bar {
   height: 6px;
   border-radius: 999px;
-  background: rgba(10, 52, 148, 0.08);
+  background: var(--ml-input-bg);
   overflow: hidden;
   margin-bottom: 0.9rem;
 }
@@ -145,14 +144,14 @@ header p {
 .bar span {
   display: block;
   height: 100%;
-  background: linear-gradient(90deg, var(--ml-sky), var(--ml-aqua));
+  background: linear-gradient(90deg, var(--ml-c4), var(--ml-c5));
   transition: width 0.3s ease;
 }
 
 .bubble {
   padding: 0.85rem;
   border-radius: 16px;
-  background: rgba(255, 251, 244, 0.9);
+  background: var(--ml-input-bg);
   border: 1px solid var(--ml-line);
   margin-bottom: 0.9rem;
 }

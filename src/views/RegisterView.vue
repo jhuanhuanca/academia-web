@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app'
 import { ApiError } from '@/api/client'
@@ -16,10 +16,6 @@ const showPassword = ref(false)
 const loading = ref(false)
 const error = ref('')
 const success = ref('')
-
-const moonStyle = computed(() => ({
-  animation: 'ml-float 4.5s ease-in-out infinite',
-}))
 
 async function onSubmit() {
   error.value = ''
@@ -62,323 +58,183 @@ async function onSubmit() {
 </script>
 
 <template>
-  <div class="login">
-    <section class="hero ml-rise">
-      <div class="orbit" aria-hidden="true"></div>
-      <div class="moon" :style="moonStyle" aria-hidden="true">
-        <span class="glow"></span>
-        <span class="face"></span>
-      </div>
-      <p class="tag">MarketLuna</p>
-      <h1>
-        Crea tu
-        <span class="accent">cuenta</span>
-      </h1>
-      <p class="lead">
-        Te damos tu propio espacio: WhatsApp, cursos, flujos y ventas solo tuyos. Nadie más los ve.
-      </p>
-      <ul class="perks">
-        <li>Tu negocio aislado (tenant propio)</li>
-        <li>Conectas tu WhatsApp con QR</li>
-        <li>Vendés y cobrás a tu ritmo</li>
-      </ul>
-    </section>
+  <div class="auth-page">
+    <button
+      class="theme-toggle floating-theme"
+      type="button"
+      :aria-label="store.theme === 'dark' ? 'Modo claro' : 'Modo oscuro'"
+      @click="store.toggleTheme()"
+    >
+      {{ store.theme === 'dark' ? '☀' : '☾' }}
+    </button>
 
-    <section class="panel ml-card ml-rise ml-rise-delay-2">
+    <section class="auth-card ml-rise">
+      <img class="logo" src="/brand/lunamarket-logo.png" alt="LunaMarket" width="72" height="72" />
       <header>
-        <h2>Registrarse</h2>
-        <p>En menos de un minuto tienes tu panel listo</p>
+        <h1>Sign up</h1>
+        <p>Crea tu espacio LunaMarket para vender por WhatsApp.</p>
       </header>
 
       <form class="form" @submit.prevent="onSubmit">
         <label class="field">
           <span class="ml-label">Tu nombre</span>
-          <input v-model="name" class="ml-input" type="text" autocomplete="name" placeholder="María Pérez" />
+          <input v-model="name" class="ml-input" type="text" required placeholder="Juan Pérez" />
         </label>
         <label class="field">
-          <span class="ml-label">Nombre del negocio (opcional)</span>
+          <span class="ml-label">Negocio</span>
           <input
             v-model="businessName"
             class="ml-input"
             type="text"
-            autocomplete="organization"
-            placeholder="Academia María"
+            placeholder="Nombre de tu negocio"
           />
         </label>
         <label class="field">
           <span class="ml-label">Email</span>
-          <input
-            v-model="email"
-            class="ml-input"
-            type="email"
-            autocomplete="username"
-            placeholder="tu@email.com"
-          />
+          <input v-model="email" class="ml-input" type="email" required placeholder="tu@email.com" />
         </label>
         <label class="field">
-          <span class="ml-label">Contraseña</span>
+          <span class="ml-label">Password</span>
           <div class="password-wrap">
             <input
               v-model="password"
               class="ml-input password-input"
               :type="showPassword ? 'text' : 'password'"
-              autocomplete="new-password"
+              required
               placeholder="Mínimo 8 caracteres"
             />
-            <button
-              class="toggle-pass"
-              type="button"
-              :aria-label="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
-              :aria-pressed="showPassword"
-              @click="showPassword = !showPassword"
-            >
+            <button class="toggle-pass" type="button" @click="showPassword = !showPassword">
               {{ showPassword ? 'Ocultar' : 'Ver' }}
             </button>
           </div>
         </label>
         <label class="field">
-          <span class="ml-label">Confirmar contraseña</span>
+          <span class="ml-label">Confirmar password</span>
           <input
             v-model="passwordConfirmation"
             class="ml-input"
             type="password"
-            autocomplete="new-password"
+            required
             placeholder="Repite la contraseña"
           />
         </label>
 
         <p v-if="error" class="error">{{ error }}</p>
-        <p v-if="success" class="success">{{ success }}</p>
+        <p v-if="success" class="ok">{{ success }}</p>
 
-        <button class="ml-btn ml-btn-primary submit" type="submit" :disabled="loading || Boolean(success)">
-          {{ loading ? 'Creando cuenta…' : success ? 'Solicitud enviada' : 'Crear mi cuenta' }}
+        <button class="ml-btn ml-btn-primary submit" type="submit" :disabled="loading">
+          {{ loading ? 'Creando…' : 'Crear cuenta' }}
         </button>
-
-        <p class="switch">
-          ¿Ya tienes cuenta?
-          <router-link to="/login">Inicia sesión</router-link>
-        </p>
       </form>
+
+      <p class="switch">
+        ¿Ya tienes cuenta?
+        <RouterLink to="/login">Sign in</RouterLink>
+      </p>
     </section>
   </div>
 </template>
 
 <style scoped>
-.login {
+.auth-page {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 1.1fr 0.9fr;
-  gap: 2rem;
-  align-items: center;
-  padding: clamp(1.5rem, 4vw, 3.5rem);
+  place-items: center;
+  padding: 1.5rem;
+  background: var(--ml-bg);
 }
 
-.hero {
-  position: relative;
-  padding: 1rem 0.5rem;
-  max-width: 560px;
+.floating-theme {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 5;
 }
 
-.orbit {
-  position: absolute;
-  inset: -10% auto auto -8%;
-  width: 280px;
-  height: 280px;
+.auth-card {
+  width: min(440px, 100%);
+  padding: 2rem 1.75rem 1.6rem;
+  border-radius: 24px;
+  background: var(--ml-card);
+  border: 1px solid var(--ml-line);
+  box-shadow: var(--ml-shadow);
+}
+
+.logo {
+  width: 72px;
+  height: 72px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(10, 52, 148, 0.28), transparent 65%);
-  filter: blur(4px);
-  animation: ml-pulse 5s ease infinite;
-  pointer-events: none;
+  margin: 0 auto 1.1rem;
 }
 
-.moon {
-  position: relative;
-  width: 120px;
-  height: 120px;
-  margin-bottom: 1.5rem;
-  border-radius: 50%;
-  background: linear-gradient(145deg, #f7f8fc, #d9e0f5);
-  box-shadow:
-    0 20px 50px rgba(10, 52, 148, 0.28),
-    inset -18px -10px 0 rgba(10, 52, 148, 0.08);
+header {
+  text-align: center;
+  margin-bottom: 1.25rem;
 }
 
-.glow {
-  position: absolute;
-  inset: -20%;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(137, 20, 104, 0.35), transparent 60%);
-  z-index: -1;
-}
-
-.face {
-  position: absolute;
-  right: 18px;
-  top: 22px;
-  width: 70%;
-  height: 70%;
-  border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, transparent 42%, rgba(6, 31, 92, 0.55) 43%);
-}
-
-.tag {
-  display: inline-block;
-  font-family: var(--font-display);
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  font-size: 0.78rem;
-  color: var(--ml-magenta);
-  margin-bottom: 0.8rem;
-}
-
-.hero h1 {
-  font-size: clamp(2.6rem, 6vw, 4.2rem);
-  line-height: 0.98;
+header h1 {
+  font-size: 1.7rem;
   color: var(--ml-wine-deep);
-  margin-bottom: 1rem;
-}
-
-.accent {
-  background: linear-gradient(120deg, var(--ml-blue), var(--ml-magenta), var(--ml-gold));
-  background-size: 200% 200%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  animation: ml-shimmer 4s linear infinite;
-}
-
-.lead {
-  font-size: 1.05rem;
-  color: var(--ml-muted);
-  max-width: 38ch;
-  margin-bottom: 1.4rem;
-}
-
-.perks {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: grid;
-  gap: 0.55rem;
-}
-
-.perks li {
-  position: relative;
-  padding-left: 1.3rem;
-  color: var(--ml-ink);
-  font-weight: 500;
-}
-
-.perks li::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0.45rem;
-  width: 0.55rem;
-  height: 0.55rem;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--ml-blue), var(--ml-magenta));
-}
-
-.panel {
-  padding: 2rem;
-  max-width: 440px;
-  width: 100%;
-  justify-self: end;
-}
-
-.panel header h2 {
-  font-size: 1.55rem;
-  color: var(--ml-wine);
   margin-bottom: 0.35rem;
 }
 
-.panel header p {
+header p {
   color: var(--ml-muted);
   font-size: 0.92rem;
-  margin-bottom: 1.4rem;
 }
 
 .form {
   display: grid;
-  gap: 1rem;
+  gap: 0.85rem;
 }
 
 .password-wrap {
   position: relative;
-  display: grid;
 }
 
 .password-input {
-  padding-right: 4.5rem;
+  padding-right: 4.4rem;
 }
 
 .toggle-pass {
   position: absolute;
-  right: 0.45rem;
+  right: 0.55rem;
   top: 50%;
   transform: translateY(-50%);
   border: 0;
   background: transparent;
-  color: var(--ml-sky);
-  font-weight: 700;
-  font-size: 0.82rem;
+  color: var(--ml-c4);
+  font-size: 0.8rem;
+  font-weight: 600;
   cursor: pointer;
-  padding: 0.35rem 0.55rem;
-  border-radius: 8px;
-}
-
-.toggle-pass:hover {
-  background: rgba(10, 52, 148, 0.1);
 }
 
 .submit {
   width: 100%;
-  margin-top: 0.35rem;
+  margin-top: 0.25rem;
 }
 
 .error {
-  color: var(--ml-wine);
-  font-size: 0.85rem;
-  font-weight: 600;
+  color: var(--ml-crimson);
+  font-size: 0.88rem;
+  margin: 0;
 }
 
-.success {
-  color: #1f6b3a;
-  font-size: 0.9rem;
-  font-weight: 600;
-  line-height: 1.45;
-  background: rgba(31, 107, 58, 0.08);
-  border-radius: 10px;
-  padding: 0.75rem 0.9rem;
+.ok {
+  color: var(--ml-c4);
+  font-size: 0.88rem;
+  margin: 0;
 }
 
 .switch {
   text-align: center;
-  font-size: 0.9rem;
+  margin-top: 1.1rem;
   color: var(--ml-muted);
-  margin: 0.4rem 0 0;
+  font-size: 0.9rem;
 }
 
 .switch a {
-  color: var(--ml-blue);
+  color: var(--ml-c5);
   font-weight: 700;
-  text-decoration: none;
-}
-
-.switch a:hover {
-  text-decoration: underline;
-}
-
-@media (max-width: 900px) {
-  .login {
-    grid-template-columns: 1fr;
-    padding-top: 2rem;
-  }
-
-  .panel {
-    justify-self: stretch;
-  }
 }
 </style>

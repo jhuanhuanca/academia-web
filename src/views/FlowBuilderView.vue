@@ -6,6 +6,7 @@ import { api } from '@/api/client'
 type NodeType =
   | 'start'
   | 'message'
+  | 'send_media'
   | 'buttons'
   | 'ai_reply'
   | 'send_payment_qr'
@@ -23,12 +24,15 @@ interface NodeConfig {
   text?: string
   footer?: string
   buttons?: FlowButton[]
+  source?: 'manual' | 'courses'
   system_hint?: string
   knowledge_tags?: string[]
   min_confidence?: number
   fallback_transition?: string
   course_id?: number | null
   qr_media_asset_id?: number | null
+  media_asset_id?: number | null
+  media_type?: 'image' | 'video'
   provider?: string
   caption?: string
   instructions?: string
@@ -115,6 +119,7 @@ const zoom = ref(0.82)
 
 const palette: { type: NodeType; label: string; hint: string }[] = [
   { type: 'message', label: 'Mensaje', hint: 'Texto fijo' },
+  { type: 'send_media', label: 'Imagen / Video', hint: 'Enviar media' },
   { type: 'buttons', label: 'Botones', hint: 'Menú interactivo' },
   { type: 'ai_reply', label: 'Luna IA', hint: 'Respuesta con knowledge' },
   { type: 'send_payment_qr', label: 'Cobro / pago', hint: 'QR, Tigo, Yape, banco' },
@@ -139,6 +144,7 @@ const triggerTypeOptions = [
 const typeColor: Record<NodeType, string> = {
   start: 'var(--ml-gold)',
   message: 'var(--ml-blue)',
+  send_media: 'var(--ml-magenta)',
   buttons: 'var(--ml-magenta)',
   ai_reply: 'var(--ml-olive)',
   send_payment_qr: 'var(--ml-crimson)',
@@ -197,10 +203,17 @@ function defaultConfig(type: NodeType, courseId?: number): NodeConfig {
   switch (type) {
     case 'message':
       return { text: 'Escribe el mensaje de Luna…' }
+    case 'send_media':
+      return {
+        media_type: 'image',
+        media_asset_id: null,
+        caption: '',
+      }
     case 'buttons':
       return {
         text: '¿Qué te interesa?',
-        footer: 'MarketLuna',
+        footer: 'LunaMarket',
+        source: 'manual',
         buttons: [{ id: 'opt1', label: 'Opción 1' }],
       }
     case 'ai_reply':
@@ -351,9 +364,10 @@ function addButton() {
 
 function applyPaymentMethodButtons() {
   if (!selected.value || selected.value.type !== 'buttons') return
+  selected.value.config.source = 'manual'
   selected.value.config.text =
     '💰 INVERSIÓN\n🔥 Precio promoción disponible\n\n👇 ¿Cómo prefieres realizar tu pago? 👇'
-  selected.value.config.footer = 'MarketLuna'
+  selected.value.config.footer = 'LunaMarket'
   selected.value.config.buttons = [
     { id: 'qr', label: '💳 QR' },
     { id: 'tigo', label: '📱 Tigo Money' },
@@ -361,6 +375,33 @@ function applyPaymentMethodButtons() {
     { id: 'deposito', label: '🏦 Depósito' },
   ]
   selected.value.name = 'Métodos de pago'
+}
+
+function applyProductCatalogButtons() {
+  if (!selected.value || selected.value.type !== 'buttons') return
+  selected.value.config.source = 'courses'
+  selected.value.config.text =
+    '📦 *Catálogo*\nElige el número del producto que quieres comprar:'
+  selected.value.config.footer = 'LunaMarket'
+  selected.value.config.buttons = []
+  selected.value.name = 'Catálogo productos'
+
+  // Conectar trigger "catalog" al primer nodo de cobro si existe
+  const pay = nodes.value.find((n) => n.type === 'send_payment_qr')
+  if (pay) {
+    edges.value = edges.value.filter(
+      (e) => !(e.from === selected.value!.id && e.trigger_key === 'catalog'),
+    )
+    edges.value.push({
+      id: `e_${Date.now()}_catalog`,
+      from: selected.value.id,
+      to: pay.id,
+      trigger_type: 'button',
+      trigger_key: 'catalog',
+    })
+    // Cobro sin producto fijo: usa el elegido en el menú
+    pay.config.course_id = null
+  }
 }
 
 function applyPaymentProviderDefaults() {
@@ -487,6 +528,14 @@ function onTagsInput(event: Event) {
 }
 
 function nodePreviewText(node: FlowNode) {
+  if (node.type === 'send_media') {
+    const kind = node.config.media_type === 'video' ? '🎬 video' : '🖼️ imagen'
+    const cap = node.config.caption || ''
+    const ready = node.config.media_asset_id ? '✓' : 'sin archivo'
+    const base = `${kind} ${ready}`
+    if (!cap) return base
+    return cap.length > 28 ? `${base} · ${cap.slice(0, 28)}…` : `${base} · ${cap}`
+  }
   const text = node.config.text
   if (!text || typeof text !== 'string') return ''
   return text.length > 36 ? `${text.slice(0, 36)}…` : text
@@ -569,7 +618,7 @@ function starterGraph(template: FlowTemplate): { nodes: FlowNode[]; edges: FlowE
         y: 200,
         config: {
           text: 'Elige una opción:',
-          footer: 'MarketLuna',
+          footer: 'LunaMarket',
           buttons: [
             { id: 'buy', label: 'Comprar curso' },
             { id: 'price', label: 'Ver precio' },
@@ -676,6 +725,40 @@ async function onPaymentQrUpload(event: Event) {
     }, 2500)
   } catch (e) {
     saveError.value = e instanceof Error ? e.message : 'No se pudo subir el QR'
+  } finally {
+    input.value = ''
+  }
+}
+
+async function onFlowMediaUpload(event: Event) {
+  if (!selected.value || selected.value.type !== 'send_media') return
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+
+  const isVideo = file.type.startsWith('video/')
+  selected.value.config.media_type = isVideo ? 'video' : 'image'
+
+  saveError.value = ''
+  try {
+    const fd = new FormData()
+    fd.append('file', file)
+    fd.append('purpose', 'flow-media')
+    const uploaded = await api<{ data: { id: number; mime?: string } }>('/media-assets', {
+      method: 'POST',
+      formData: fd,
+    })
+    selected.value.config.media_asset_id = uploaded.data.id
+    if (uploaded.data.mime?.startsWith('video/')) {
+      selected.value.config.media_type = 'video'
+    }
+    isDirty.value = true
+    saved.value = true
+    setTimeout(() => {
+      saved.value = false
+    }, 2500)
+  } catch (e) {
+    saveError.value = e instanceof Error ? e.message : 'No se pudo subir el archivo'
   } finally {
     input.value = ''
   }
@@ -1146,13 +1229,65 @@ watch(
         <textarea v-model="selected.config.text" class="ml-textarea" rows="4" />
       </label>
 
+      <!-- SEND MEDIA (imagen / video) -->
+      <template v-if="selected.type === 'send_media'">
+        <p class="hint">
+          Envía una imagen o un video corto por WhatsApp. Conecta este nodo con
+          <code>default</code> al siguiente paso (menú, cobro, etc.).
+        </p>
+        <label>
+          <span class="ml-label">Tipo</span>
+          <select v-model="selected.config.media_type" class="ml-select">
+            <option value="image">Imagen</option>
+            <option value="video">Video</option>
+          </select>
+        </label>
+        <label>
+          <span class="ml-label">Leyenda (opcional)</span>
+          <textarea
+            v-model="selected.config.caption"
+            class="ml-textarea"
+            rows="3"
+            placeholder="Texto que acompaña la imagen o el video"
+          />
+        </label>
+        <label class="qr-upload-field">
+          <span class="ml-label">Archivo</span>
+          <input
+            type="file"
+            accept="image/png,image/jpeg,image/webp,video/mp4,video/3gpp,video/webm,video/quicktime"
+            @change="onFlowMediaUpload"
+          />
+          <span class="hint">
+            {{
+              selected.config.media_asset_id
+                ? `Listo · asset #${selected.config.media_asset_id} (${selected.config.media_type || 'image'})`
+                : 'Sube JPG/PNG/WebP o MP4 (máx. ~20 MB).'
+            }}
+          </span>
+        </label>
+      </template>
+
       <!-- BUTTONS -->
       <template v-if="selected.type === 'buttons'">
         <p class="hint">
-          Con Baileys (QR) se envía un <strong>menú numerado</strong> (1, 2, 3) — funciona en
-          Web y celular. El cliente responde <code>1</code> o el nombre. Conecta cada id a un nodo
-          (ej. <code>qr</code> → Enviar QR).
+          Con <strong>WhatsApp Cloud API</strong> se envían hasta
+          <strong>3 botones tappable</strong> oficiales. Conecta cada id a un nodo (ej.
+          <code>qr</code> → Enviar QR). Usa <strong>Catálogo productos</strong> para listar productos
+          activos (máx. 3 en Cloud API).
         </p>
+        <label class="check-row">
+          <input
+            type="checkbox"
+            :checked="selected.config.source === 'courses'"
+            @change="
+              selected.config.source = ($event.target as HTMLInputElement).checked
+                ? 'courses'
+                : 'manual'
+            "
+          />
+          <span>Catálogo dinámico desde Productos</span>
+        </label>
         <label>
           <span class="ml-label">Texto del menú</span>
           <textarea
@@ -1166,53 +1301,78 @@ watch(
           <span class="ml-label">Footer</span>
           <input v-model="selected.config.footer" class="ml-input" />
         </label>
+        <div v-if="selected.config.source === 'courses'" class="hint">
+          En runtime se listan hasta 6 productos activos. Conecta el trigger
+          <code>catalog</code> → nodo Cobro (el botón de abajo lo hace por ti).
+        </div>
         <div class="buttons-edit">
           <div class="row-head">
-            <span class="ml-label">Botones (máx. 6 · menú numerado)</span>
+            <span class="ml-label">Botones (máx. 3 en Cloud API)</span>
             <div class="row-actions">
+              <button class="ml-btn ml-btn-ghost node-action" type="button" @click="applyProductCatalogButtons">
+                Catálogo productos
+              </button>
               <button class="ml-btn ml-btn-ghost node-action" type="button" @click="applyPaymentMethodButtons">
                 Plantilla pago
               </button>
               <button
                 class="ml-btn ml-btn-ghost node-action"
                 type="button"
-                :disabled="getNodeButtons(selected).length >= 6"
+                :disabled="getNodeButtons(selected).length >= 6 || selected.config.source === 'courses'"
                 @click="addButton"
               >
                 + Botón
               </button>
             </div>
           </div>
-          <div v-for="(b, i) in getNodeButtons(selected)" :key="b.id" class="button-card">
-            <input
-              class="ml-input"
-              placeholder="Etiqueta (máx 20)"
-              maxlength="20"
-              :value="b.label"
-              @input="onButtonLabelInput(i, $event)"
-            />
-            <input
-              class="ml-input mono"
-              placeholder="id (trigger)"
-              :value="b.id"
-              @input="onButtonIdInput(i, $event)"
-            />
+          <template v-if="selected.config.source !== 'courses'">
+            <div v-for="(b, i) in getNodeButtons(selected)" :key="b.id" class="button-card">
+              <input
+                class="ml-input"
+                placeholder="Etiqueta (máx 20)"
+                maxlength="20"
+                :value="b.label"
+                @input="onButtonLabelInput(i, $event)"
+              />
+              <input
+                class="ml-input mono"
+                placeholder="id (trigger)"
+                :value="b.id"
+                @input="onButtonIdInput(i, $event)"
+              />
+              <label class="inline-label">
+                <span>Conectar a →</span>
+                <select
+                  class="ml-select"
+                  :value="getButtonTarget(b.id)"
+                  @change="onButtonTargetChange(b.id, $event)"
+                >
+                  <option value="">— elegir nodo —</option>
+                  <option v-for="opt in nodeOptions" :key="opt.value" :value="opt.value">
+                    {{ opt.label }}
+                  </option>
+                </select>
+              </label>
+              <button class="ml-btn ml-btn-ghost node-action" type="button" @click="removeButton(i)">
+                Quitar
+              </button>
+            </div>
+          </template>
+          <div v-else class="button-card">
             <label class="inline-label">
-              <span>Conectar a →</span>
+              <span>Trigger catálogo →</span>
               <select
                 class="ml-select"
-                :value="getButtonTarget(b.id)"
-                @change="onButtonTargetChange(b.id, $event)"
+                :value="getButtonTarget('catalog')"
+                @change="onButtonTargetChange('catalog', $event)"
               >
-                <option value="">— elegir nodo —</option>
+                <option value="">— elegir nodo cobro —</option>
                 <option v-for="opt in nodeOptions" :key="opt.value" :value="opt.value">
                   {{ opt.label }}
                 </option>
               </select>
             </label>
-            <button class="ml-btn ml-btn-ghost node-action" type="button" @click="removeButton(i)">
-              Quitar
-            </button>
+            <p class="hint">Vista previa productos: {{ courses.map((c) => c.title).join(' · ') || 'ninguno' }}</p>
           </div>
         </div>
       </template>
@@ -1244,9 +1404,9 @@ watch(
       <!-- PAYMENT / COBRO -->
       <template v-if="selected.type === 'send_payment_qr'">
         <label>
-          <span class="ml-label">Curso a cobrar</span>
+          <span class="ml-label">Producto a cobrar</span>
           <select v-model="selected.config.course_id" class="ml-select">
-            <option :value="null">— seleccionar —</option>
+            <option :value="null">— del catálogo (elegido por el cliente) —</option>
             <option v-for="c in courses" :key="c.id" :value="c.id">
               {{ c.title }}{{ c.payment_qr_media_asset_id ? ' · QR✓' : '' }}
             </option>
@@ -1323,9 +1483,9 @@ watch(
       <!-- DELIVER -->
       <template v-if="selected.type === 'deliver_course'">
         <label>
-          <span class="ml-label">Curso a entregar</span>
+          <span class="ml-label">Producto a entregar</span>
           <select v-model="selected.config.course_id" class="ml-select">
-            <option :value="null">— seleccionar —</option>
+            <option :value="null">— del catálogo / venta —</option>
             <option v-for="c in courses" :key="c.id" :value="c.id">{{ c.title }}</option>
           </select>
         </label>
@@ -1415,7 +1575,7 @@ watch(
 .inspector h2,
 .preview h2,
 .toolbar h2 {
-  color: var(--ml-wine-deep);
+  color: var(--ml-ink);
   font-size: 0.95rem;
 }
 .hint {
@@ -1438,18 +1598,20 @@ watch(
 .palette-item {
   text-align: left;
   border: 1px solid var(--ml-line);
-  background: rgba(255, 251, 244, 0.8);
+  background: var(--ml-input-bg);
+  color: var(--ml-ink);
   border-radius: 10px;
   padding: 0.5rem 0.55rem;
   cursor: pointer;
 }
 .palette-item:hover {
-  border-color: rgba(10, 52, 148, 0.45);
+  border-color: var(--ml-c5);
 }
 .palette-item strong {
   display: block;
-  color: var(--ml-wine);
+  color: var(--ml-ink);
   font-size: 0.8rem;
+  font-weight: 700;
 }
 .palette-item span {
   font-size: 0.68rem;
@@ -1503,7 +1665,7 @@ watch(
 .flow-name {
   font-size: 0.92rem;
   font-weight: 700;
-  color: var(--ml-wine-deep);
+  color: var(--ml-ink);
   max-width: 220px;
   padding: 0.35rem 0.5rem;
 }
@@ -1533,7 +1695,7 @@ watch(
   padding: 0.15rem 0.25rem;
   border-radius: 10px;
   border: 1px solid var(--ml-line);
-  background: rgba(255, 251, 244, 0.75);
+  background: var(--ml-input-bg);
 }
 .zoom-btn {
   min-width: 1.6rem;
@@ -1564,9 +1726,10 @@ watch(
   width: 100%;
   max-width: 100%;
   overflow: auto;
+  background-color: var(--ml-input-bg);
   background-image:
-    linear-gradient(rgba(10, 52, 148, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(10, 52, 148, 0.04) 1px, transparent 1px);
+    linear-gradient(rgba(0, 198, 171, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 198, 171, 0.08) 1px, transparent 1px);
   background-size: 22px 22px;
 }
 .canvas-stage {
@@ -1589,7 +1752,7 @@ watch(
   opacity: 0.75;
 }
 .edge-label {
-  fill: var(--ml-wine);
+  fill: var(--ml-c5);
   font-size: 9px;
   font-weight: 700;
   text-anchor: middle;
@@ -1601,7 +1764,8 @@ watch(
   width: 158px;
   padding: 0.45rem 0.5rem;
   border-radius: 12px;
-  background: rgba(255, 251, 244, 0.96);
+  background: var(--ml-card);
+  color: var(--ml-ink);
   border: 1.5px solid var(--ml-line);
   box-shadow: var(--ml-shadow-soft);
   cursor: grab;
@@ -1609,7 +1773,7 @@ watch(
   touch-action: none;
 }
 .node.selected {
-  box-shadow: 0 0 0 2px rgba(127, 154, 82, 0.35), var(--ml-shadow);
+  box-shadow: 0 0 0 2px rgba(0, 198, 171, 0.45), var(--ml-shadow);
 }
 .dot {
   width: 8px;
@@ -1621,6 +1785,8 @@ watch(
 .node strong {
   font-size: 0.78rem;
   line-height: 1.2;
+  color: var(--ml-ink);
+  font-weight: 700;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -1639,16 +1805,17 @@ watch(
 }
 .mini-btns span {
   font-size: 0.58rem;
-  font-weight: 600;
+  font-weight: 700;
   padding: 0.1rem 0.3rem;
   border-radius: 999px;
-  background: rgba(10, 52, 148, 0.12);
-  color: var(--ml-sky);
+  background: rgba(0, 198, 171, 0.16);
+  color: var(--ml-ink);
 }
 .mini-text {
   margin-top: 0.25rem;
   font-size: 0.62rem;
-  color: var(--ml-muted);
+  color: var(--ml-ink);
+  opacity: 0.78;
   line-height: 1.25;
 }
 .status-ok {
@@ -1710,7 +1877,7 @@ watch(
   padding: 0.6rem;
   border: 1px solid var(--ml-line);
   border-radius: 12px;
-  background: rgba(255, 251, 244, 0.7);
+  background: var(--ml-input-bg);
 }
 .mono {
   font-family: ui-monospace, monospace;
@@ -1747,7 +1914,8 @@ watch(
   font-size: 0.78rem;
   padding: 0.35rem 0.45rem;
   border-radius: 8px;
-  background: rgba(10, 52, 148, 0.06);
+  background: var(--ml-input-bg);
+  color: var(--ml-ink);
 }
 .add-edge {
   display: grid;
@@ -1764,22 +1932,24 @@ watch(
   overflow: auto;
   padding: 0.4rem;
   border-radius: 10px;
-  background: rgba(10, 52, 148, 0.03);
+  background: var(--ml-input-bg);
 }
 .bubble {
   max-width: 95%;
   padding: 0.5rem 0.65rem;
   border-radius: 10px;
   font-size: 0.8rem;
+  color: var(--ml-ink);
 }
 .bubble.luna {
   justify-self: start;
-  background: rgba(10, 52, 148, 0.12);
+  background: rgba(0, 198, 171, 0.14);
 }
 .bubble.user {
   justify-self: end;
-  background: linear-gradient(135deg, var(--ml-wine), var(--ml-ember));
-  color: var(--ml-cream);
+  background: linear-gradient(135deg, var(--ml-c3), var(--ml-c5));
+  color: #003754;
+  font-weight: 600;
 }
 .empty-inspector {
   color: var(--ml-muted);
@@ -1806,7 +1976,7 @@ watch(
   align-items: center;
 }
 .modal-head h2 {
-  color: var(--ml-wine-deep);
+  color: var(--ml-ink);
   font-size: 1.1rem;
 }
 .check-row {

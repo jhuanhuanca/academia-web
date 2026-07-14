@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount, ref } from 'vue'
 import { api, API_URL } from '@/api/client'
+import DatePeriodFilter, { type Period } from '@/components/DatePeriodFilter.vue'
 
 type ReceiptMedia = {
   id: number
@@ -34,6 +35,10 @@ const success = ref('')
 const receiptUrls = ref<Record<number, string>>({})
 const blobUrls: string[] = []
 
+const period = ref<Period>('today')
+const date = ref('')
+const month = ref('')
+
 function latestPayment(sale: Sale): Payment | null {
   return sale.payments?.[0] ?? null
 }
@@ -55,6 +60,13 @@ function statusClass(status: string) {
   return 'ml-badge-warn'
 }
 
+function queryParams() {
+  const q = new URLSearchParams({ period: period.value })
+  if (period.value === 'day' && date.value) q.set('date', date.value)
+  if (period.value === 'month' && month.value) q.set('month', month.value)
+  return q.toString()
+}
+
 async function loadReceiptPreview(mediaId: number) {
   if (receiptUrls.value[mediaId]) return
   const token = localStorage.getItem('ml_token')
@@ -72,7 +84,7 @@ async function loadSales() {
   loading.value = true
   error.value = ''
   try {
-    const res = await api<{ data: Sale[] }>('/sales')
+    const res = await api<{ data: Sale[] }>(`/sales?${queryParams()}`)
     sales.value = res.data
     for (const sale of res.data) {
       const mediaId = latestPayment(sale)?.receipt_media?.id
@@ -119,11 +131,19 @@ onBeforeUnmount(() => {
 
     <section class="ml-card table-wrap ml-rise ml-rise-delay-1">
       <header>
-        <h2>Ventas</h2>
+        <div>
+          <h2>Ventas</h2>
+          <DatePeriodFilter
+            v-model:period="period"
+            v-model:date="date"
+            v-model:month="month"
+            @change="loadSales"
+          />
+        </div>
         <button class="ml-btn ml-btn-ghost" type="button" @click="loadSales">Actualizar</button>
       </header>
       <p v-if="loading">Cargando…</p>
-      <p v-else-if="!sales.length" class="empty">Sin ventas todavía. Simula una compra desde WhatsApp.</p>
+      <p v-else-if="!sales.length" class="empty">Sin ventas en este período.</p>
       <div v-else class="sales-list">
         <article v-for="sale in sales" :key="sale.id" class="sale-card">
           <div class="sale-head">
@@ -182,11 +202,18 @@ onBeforeUnmount(() => {
 header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
+  gap: 1rem;
   margin-bottom: 0.9rem;
+}
+header > div {
+  display: grid;
+  gap: 0.65rem;
+  flex: 1;
 }
 h2 {
   color: var(--ml-wine-deep);
+  margin: 0;
 }
 .empty {
   color: var(--ml-muted);
@@ -199,7 +226,8 @@ h2 {
   border: 1px solid var(--ml-line);
   border-radius: 14px;
   padding: 0.9rem;
-  background: rgba(255, 251, 244, 0.7);
+  background: var(--ml-input-bg);
+  color: var(--ml-ink);
 }
 .sale-head {
   display: flex;

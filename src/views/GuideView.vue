@@ -17,7 +17,7 @@ function go(index: number) {
       <div class="moon" aria-hidden="true">☽</div>
       <div>
         <p class="eyebrow">Guía para principiantes</p>
-        <h2>Configura MarketLuna en 7 pasos</h2>
+        <h2>Configura LunaMarket en 7 pasos</h2>
         <p>
           No necesitas saber de APIs todavía. Sigue los mensajes de Luna: cada paso desbloquea el
           siguiente hasta publicar tu primera automatización de ventas.

@@ -42,10 +42,10 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
   },
   {
     id: 'course',
-    title: 'Crea tu primer curso',
-    tip: 'Define título, precio y el link de entrega que Luna enviará tras el pago.',
+    title: 'Crea tu primer producto',
+    tip: 'Define título, precio y el link de entrega que el bot enviará tras el pago.',
     route: '/app/cursos',
-    cta: 'Ir a cursos',
+    cta: 'Ir a productos',
   },
   {
     id: 'knowledge',
@@ -84,6 +84,18 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
   },
 ]
 
+export type ThemeMode = 'light' | 'dark'
+
+function resolveInitialTheme(): ThemeMode {
+  const saved = localStorage.getItem('ml_theme')
+  if (saved === 'light' || saved === 'dark') return saved
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+}
+
+function applyTheme(mode: ThemeMode) {
+  document.documentElement.setAttribute('data-theme', mode)
+}
+
 export const useAppStore = defineStore('app', () => {
   const token = ref<string | null>(localStorage.getItem('ml_token'))
   const user = ref<AuthUser | null>(
@@ -92,7 +104,9 @@ export const useAppStore = defineStore('app', () => {
       : null,
   )
   const isAuthenticated = computed(() => Boolean(token.value))
-  const userName = computed(() => user.value?.name || 'Admin MarketLuna')
+  const userName = computed(() => user.value?.name || 'Admin LunaMarket')
+  const theme = ref<ThemeMode>(resolveInitialTheme())
+  applyTheme(theme.value)
 
   const onboardingIndex = ref(Number(localStorage.getItem('ml_onboarding') || 0))
   const guideOpen = ref(localStorage.getItem('ml_guide_dismissed') !== '1')
@@ -216,11 +230,22 @@ export const useAppStore = defineStore('app', () => {
     localStorage.removeItem('ml_guide_dismissed')
   }
 
+  function setTheme(mode: ThemeMode) {
+    theme.value = mode
+    localStorage.setItem('ml_theme', mode)
+    applyTheme(mode)
+  }
+
+  function toggleTheme() {
+    setTheme(theme.value === 'dark' ? 'light' : 'dark')
+  }
+
   return {
     token,
     user,
     isAuthenticated,
     userName,
+    theme,
     onboardingIndex,
     guideOpen,
     guideMinimized,
@@ -240,5 +265,7 @@ export const useAppStore = defineStore('app', () => {
     nextOnboarding,
     dismissGuide,
     reopenGuide,
+    setTheme,
+    toggleTheme,
   }
 })

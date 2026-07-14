@@ -11,11 +11,11 @@ const kpis = ref([
   { label: 'Conversaciones', value: '0', hint: 'total', tone: 'wine' },
   { label: 'Pagos pendientes', value: '0', hint: 'QR activos', tone: 'ember' },
   { label: 'Ventas pagadas', value: '0', hint: 'pagadas', tone: 'sky' },
-  { label: 'Cursos entregados', value: '0', hint: 'automático', tone: 'aqua' },
+  { label: 'Entregas', value: '0', hint: 'automático', tone: 'aqua' },
 ])
 
 const checklist = computed(() => [
-  { ok: store.courseReady, label: 'Curso creado', to: '/app/cursos' },
+  { ok: store.courseReady, label: 'Producto creado', to: '/app/cursos' },
   { ok: store.knowledgeReady, label: 'Knowledge para Luna', to: '/app/knowledge' },
   { ok: store.whatsappReady, label: 'WhatsApp conectado', to: '/app/whatsapp' },
   { ok: store.flowReady, label: 'Flujo publicado', to: '/app/flujos' },
@@ -50,7 +50,7 @@ onMounted(async () => {
       },
       { label: 'Ventas pagadas', value: String(data.kpis.paid_sales), hint: 'pagadas', tone: 'sky' },
       {
-        label: 'Cursos entregados',
+        label: 'Entregas',
         value: String(data.kpis.delivered),
         hint: 'automático',
         tone: 'aqua',
@@ -64,32 +64,30 @@ onMounted(async () => {
 
 <template>
   <div class="dash">
-    <section class="hero ml-card ml-rise">
-      <div>
-        <p class="eyebrow">Hola, {{ store.userName }}</p>
-        <h2>Tu centro de control con Luna</h2>
+    <section class="hero ml-rise">
+      <div class="hero-copy">
+        <p class="eyebrow">Welcome back</p>
+        <h2>Hola, {{ store.userName }}</h2>
         <p class="lead">
-          Dashboard conectado a la API. Checklist y KPIs salen de
-          <code>academia_chatbot</code>.
+          Controla productos, flujos y ventas WhatsApp desde un solo panel.
         </p>
         <div class="hero-actions">
-          <button class="ml-btn ml-btn-primary" type="button" @click="router.push('/app/guia')">
-            Abrir guía principiante
+          <button class="ml-btn ml-btn-primary" type="button" @click="router.push('/app/flujos')">
+            Abrir Flow Builder
           </button>
-          <button class="ml-btn ml-btn-secondary" type="button" @click="router.push('/app/flujos')">
-            Ir al Flow Builder
+          <button class="ml-btn ghost-light" type="button" @click="router.push('/app/whatsapp')">
+            WhatsApp
           </button>
         </div>
-      </div>
-      <div class="hero-visual" aria-hidden="true">
-        <div class="ring"></div>
-        <div class="luna">☽</div>
-        <p>
+        <div class="status-pill">
           Luna
           <span class="ml-badge" :class="store.lunaStatus === 'ok' ? 'ml-badge-ok' : 'ml-badge-warn'">
             {{ store.lunaStatus === 'ok' ? 'online' : 'offline' }}
           </span>
-        </p>
+        </div>
+      </div>
+      <div class="hero-visual" aria-hidden="true">
+        <img src="/brand/lunamarket-logo.png" alt="" width="140" height="140" />
       </div>
     </section>
 
@@ -120,7 +118,7 @@ onMounted(async () => {
             <button type="button" @click="router.push(item.to)">{{ item.label }}</button>
           </li>
         </ul>
-        <p class="tip">Tip de Luna: completa estos 4 pasos antes de hablar con clientes reales.</p>
+        <p class="tip">Tip: completa estos 4 pasos antes de hablar con clientes reales.</p>
       </article>
 
       <article class="ml-card panel ml-rise ml-rise-delay-2">
@@ -129,12 +127,12 @@ onMounted(async () => {
         </header>
         <div class="shortcuts">
           <button class="shortcut" type="button" @click="router.push('/app/cursos')">
-            <strong>Nuevo curso</strong>
-            <span>Precio + link de entrega</span>
+            <strong>Productos</strong>
+            <span>Catálogo y precios</span>
           </button>
           <button class="shortcut" type="button" @click="router.push('/app/knowledge')">
-            <strong>Knowledge Luna</strong>
-            <span>Qué sí puede decir</span>
+            <strong>Knowledge</strong>
+            <span>Qué puede decir Luna</span>
           </button>
           <button class="shortcut" type="button" @click="router.push('/app/whatsapp')">
             <strong>WhatsApp</strong>
@@ -142,7 +140,7 @@ onMounted(async () => {
           </button>
           <button class="shortcut" type="button" @click="router.push('/app/ventas')">
             <strong>Ventas</strong>
-            <span>QR y entregas</span>
+            <span>Pagos y entregas</span>
           </button>
         </div>
       </article>
@@ -160,71 +158,64 @@ onMounted(async () => {
 }
 .hero {
   display: grid;
-  grid-template-columns: 1.4fr 0.6fr;
+  grid-template-columns: 1.35fr 0.65fr;
   gap: 1rem;
-  padding: 1.5rem;
+  padding: 1.6rem 1.5rem;
   overflow: hidden;
   position: relative;
+  border-radius: var(--radius-xl);
+  background: var(--ml-hero);
+  color: #e8f7f5;
+  box-shadow: var(--ml-shadow);
 }
 .eyebrow {
-  color: var(--ml-ember);
+  color: rgba(232, 247, 245, 0.75);
   font-weight: 700;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
 }
 .hero h2 {
-  font-size: clamp(1.5rem, 3vw, 2.1rem);
-  color: var(--ml-wine-deep);
-  margin: 0.35rem 0 0.6rem;
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  color: #fff;
+  margin: 0.35rem 0 0.55rem;
 }
 .lead {
-  color: var(--ml-muted);
-  max-width: 48ch;
+  color: rgba(232, 247, 245, 0.82);
+  max-width: 46ch;
   margin-bottom: 1.1rem;
-}
-.lead code {
-  color: var(--ml-sky);
 }
 .hero-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.6rem;
 }
+.ghost-light {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+}
+.status-pill {
+  margin-top: 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 0.85rem;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.18);
+  font-weight: 600;
+  font-size: 0.88rem;
+}
 .hero-visual {
   display: grid;
   place-items: center;
-  align-content: center;
-  position: relative;
 }
-.ring {
-  position: absolute;
-  width: 150px;
-  height: 150px;
+.hero-visual img {
+  width: min(150px, 42vw);
+  height: auto;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(127, 154, 82, 0.35), transparent 70%);
-  animation: ml-pulse 3.5s ease infinite;
-}
-.luna {
-  width: 88px;
-  height: 88px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  font-size: 2rem;
-  color: var(--ml-cream);
-  background: linear-gradient(145deg, var(--ml-wine), var(--ml-ember));
-  box-shadow: 0 16px 30px rgba(10, 52, 148, 0.28);
-  animation: ml-float 4s ease-in-out infinite;
-  z-index: 1;
-}
-.hero-visual p {
-  margin-top: 0.6rem;
-  font-weight: 700;
-  color: var(--ml-wine);
-  display: flex;
-  gap: 0.4rem;
-  align-items: center;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+  animation: ml-float 4.5s ease-in-out infinite;
 }
 .kpis {
   display: grid;
@@ -232,7 +223,8 @@ onMounted(async () => {
   gap: 0.85rem;
 }
 .kpi {
-  padding: 1rem 1.1rem;
+  padding: 1.1rem 1.15rem;
+  border-radius: 22px;
 }
 .kpi p {
   font-size: 0.8rem;
@@ -243,51 +235,53 @@ onMounted(async () => {
   font-family: var(--font-display);
   font-size: 1.9rem;
   margin: 0.2rem 0;
+  color: var(--ml-wine-deep);
 }
 .kpi span {
   font-size: 0.75rem;
-  font-weight: 600;
+  color: var(--ml-muted);
 }
 .tone-wine strong {
-  color: var(--ml-wine);
+  color: var(--ml-c3);
 }
-.tone-ember strong {
-  color: var(--ml-ember);
-}
-.tone-sky strong {
-  color: var(--ml-sky);
-}
+.tone-ember strong,
+.tone-sky strong,
 .tone-aqua strong {
-  color: #069991;
+  color: var(--ml-c5);
+}
+html[data-theme='dark'] .tone-wine strong {
+  color: var(--ml-c5);
 }
 .grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.85rem;
+  gap: 0.95rem;
 }
 .panel {
-  padding: 1.15rem;
+  padding: 1.15rem 1.2rem;
+  border-radius: 22px;
 }
 .panel header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.9rem;
+  margin-bottom: 0.85rem;
 }
 .panel h3 {
+  font-size: 1.05rem;
   color: var(--ml-wine-deep);
 }
-ul {
+.panel ul {
   list-style: none;
   padding: 0;
   margin: 0;
   display: grid;
-  gap: 0.55rem;
+  gap: 0.45rem;
 }
-li {
+.panel li {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.55rem;
 }
 .check {
   width: 24px;
@@ -296,23 +290,26 @@ li {
   display: grid;
   place-items: center;
   font-size: 0.75rem;
-  background: rgba(10, 52, 148, 0.08);
+  background: var(--ml-input-bg);
+  border: 1px solid var(--ml-line);
   color: var(--ml-muted);
 }
 .check.on {
-  background: rgba(127, 154, 82, 0.25);
-  color: #4f6a2e;
+  background: rgba(0, 198, 171, 0.18);
+  color: var(--ml-c4);
+  border-color: transparent;
 }
-li button {
-  border: none;
+.panel li button {
+  border: 0;
   background: transparent;
   color: var(--ml-ink);
-  font-weight: 600;
   cursor: pointer;
+  padding: 0.35rem 0;
+  font-weight: 500;
   text-align: left;
 }
 .tip {
-  margin-top: 1rem;
+  margin-top: 0.9rem;
   font-size: 0.82rem;
   color: var(--ml-muted);
 }
@@ -324,31 +321,36 @@ li button {
 .shortcut {
   text-align: left;
   border: 1px solid var(--ml-line);
-  background: rgba(255, 251, 244, 0.7);
-  border-radius: 14px;
-  padding: 0.85rem;
+  background: var(--ml-input-bg);
+  border-radius: 16px;
+  padding: 0.9rem;
   cursor: pointer;
+  color: var(--ml-ink);
   transition:
-    transform 0.15s ease,
-    border-color 0.15s ease;
+    border-color 0.15s ease,
+    transform 0.15s ease;
 }
 .shortcut:hover {
-  transform: translateY(-2px);
-  border-color: rgba(10, 52, 148, 0.4);
+  border-color: var(--ml-c5);
+  transform: translateY(-1px);
 }
 .shortcut strong {
   display: block;
-  color: var(--ml-wine);
   margin-bottom: 0.2rem;
 }
 .shortcut span {
   font-size: 0.78rem;
   color: var(--ml-muted);
 }
-@media (max-width: 900px) {
+@media (max-width: 960px) {
   .hero,
   .grid,
-  .kpis,
+  .kpis {
+    grid-template-columns: 1fr;
+  }
+  .hero-visual {
+    display: none;
+  }
   .shortcuts {
     grid-template-columns: 1fr;
   }
