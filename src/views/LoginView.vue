@@ -96,6 +96,14 @@ async function onSubmit() {
         ¿No tienes cuenta?
         <RouterLink to="/register">Sign up</RouterLink>
       </p>
+
+      <nav class="legal-links" aria-label="Documentos legales">
+        <RouterLink to="/privacy-policy">Política de privacidad</RouterLink>
+        <span aria-hidden="true">·</span>
+        <RouterLink to="/terms-of-service">Términos del servicio</RouterLink>
+        <span aria-hidden="true">·</span>
+        <RouterLink to="/data-deletion">Eliminación de datos</RouterLink>
+      </nav>
     </section>
   </div>
 </template>
@@ -196,5 +204,29 @@ header p {
 .switch a {
   color: var(--ml-c5);
   font-weight: 700;
+}
+
+.legal-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.35rem 0.55rem;
+  margin-top: 1.35rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--ml-line);
+  font-size: 0.78rem;
+  color: var(--ml-muted);
+  text-align: center;
+  line-height: 1.4;
+}
+
+.legal-links a {
+  color: var(--ml-muted);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.legal-links a:hover {
+  color: var(--ml-c5);
 }
 </style>

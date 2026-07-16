@@ -33,6 +33,24 @@ const router = createRouter({
       meta: { guest: true },
     },
     {
+      path: '/privacy-policy',
+      name: 'privacy-policy',
+      component: () => import('@/views/LegalDocumentView.vue'),
+      meta: { public: true },
+    },
+    {
+      path: '/terms-of-service',
+      name: 'terms-of-service',
+      component: () => import('@/views/LegalDocumentView.vue'),
+      meta: { public: true },
+    },
+    {
+      path: '/data-deletion',
+      name: 'data-deletion',
+      component: () => import('@/views/LegalDocumentView.vue'),
+      meta: { public: true },
+    },
+    {
       path: '/app',
       component: () => import('@/layouts/AppLayout.vue'),
       meta: { requiresAuth: true },
