@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useAppStore } from '@/stores/app'
-import { api } from '@/api/client'
+import { api, API_URL } from '@/api/client'
 
 type NodeType =
   | 'start'
@@ -562,14 +562,26 @@ function buildSavePayload() {
   const start = nodes.value.find((n) => n.type === 'start')
   return {
     start_node_key: start?.id ?? null,
-    nodes: nodes.value.map((n) => ({
-      node_key: n.id,
-      type: n.type,
-      name: n.name,
-      config: n.config,
-      position_x: Math.round(n.x),
-      position_y: Math.round(n.y),
-    })),
+    nodes: nodes.value.map((n) => {
+      const config = { ...n.config }
+      if (config.media_asset_id != null && config.media_asset_id !== '') {
+        config.media_asset_id = Number(config.media_asset_id)
+      }
+      if (config.qr_media_asset_id != null && config.qr_media_asset_id !== '') {
+        config.qr_media_asset_id = Number(config.qr_media_asset_id)
+      }
+      if (config.course_id != null && config.course_id !== '') {
+        config.course_id = Number(config.course_id)
+      }
+      return {
+        node_key: n.id,
+        type: n.type,
+        name: n.name,
+        config,
+        position_x: Math.round(n.x),
+        position_y: Math.round(n.y),
+      }
+    }),
     edges: edges.value.map((e) => ({
       from_node_key: e.from,
       to_node_key: e.to,
@@ -739,7 +751,14 @@ async function onFlowMediaUpload(event: Event) {
   const isVideo = file.type.startsWith('video/')
   selected.value.config.media_type = isVideo ? 'video' : 'image'
 
+  if (file.size > 20 * 1024 * 1024) {
+    saveError.value = 'El archivo supera 20 MB. Usa un video más corto o una imagen más liviana.'
+    input.value = ''
+    return
+  }
+
   saveError.value = ''
+  saving.value = true
   try {
     const fd = new FormData()
     fd.append('file', file)
@@ -748,11 +767,24 @@ async function onFlowMediaUpload(event: Event) {
       method: 'POST',
       formData: fd,
     })
-    selected.value.config.media_asset_id = uploaded.data.id
+    const assetId = Number(uploaded.data.id)
+    selected.value.config.media_asset_id = assetId
     if (uploaded.data.mime?.startsWith('video/')) {
       selected.value.config.media_type = 'video'
     }
     isDirty.value = true
+
+    // Persistir de inmediato para que WhatsApp no diga "Falta subir…"
+    if (flowId.value) {
+      await api(`/flows/${flowId.value}/graph`, {
+        method: 'PUT',
+        body: buildSavePayload(),
+      })
+      flowStatus.value = 'draft'
+      isDirty.value = false
+    }
+
+    await loadMediaPreview(assetId, selected.value.config.media_type || 'image')
     saved.value = true
     setTimeout(() => {
       saved.value = false
@@ -760,9 +792,53 @@ async function onFlowMediaUpload(event: Event) {
   } catch (e) {
     saveError.value = e instanceof Error ? e.message : 'No se pudo subir el archivo'
   } finally {
+    saving.value = false
     input.value = ''
   }
 }
+
+const mediaPreviewUrl = ref<string | null>(null)
+let mediaPreviewBlob: string | null = null
+
+async function loadMediaPreview(assetId: number, kind: 'image' | 'video' = 'image') {
+  if (mediaPreviewBlob) {
+    URL.revokeObjectURL(mediaPreviewBlob)
+    mediaPreviewBlob = null
+  }
+  mediaPreviewUrl.value = null
+  if (!assetId) return
+
+  try {
+    const token = localStorage.getItem('ml_token')
+    const res = await fetch(`${API_URL}/media-assets/${assetId}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
+    if (!res.ok) return
+    const blob = await res.blob()
+    mediaPreviewBlob = URL.createObjectURL(blob)
+    mediaPreviewUrl.value = mediaPreviewBlob
+    if (blob.type.startsWith('video/') && selected.value?.type === 'send_media') {
+      selected.value.config.media_type = 'video'
+    } else if (kind === 'image' && selected.value?.type === 'send_media' && !selected.value.config.media_type) {
+      selected.value.config.media_type = 'image'
+    }
+  } catch {
+    // preview opcional
+  }
+}
+
+watch(selectedId, () => {
+  const node = selected.value
+  if (node?.type === 'send_media' && node.config.media_asset_id) {
+    void loadMediaPreview(Number(node.config.media_asset_id), node.config.media_type || 'image')
+  } else {
+    if (mediaPreviewBlob) {
+      URL.revokeObjectURL(mediaPreviewBlob)
+      mediaPreviewBlob = null
+    }
+    mediaPreviewUrl.value = null
+  }
+})
 
 async function loadFlowList() {
   const res = await api<{ data: FlowSummary[] }>('/flows')
@@ -950,6 +1026,16 @@ async function saveDraft() {
 
 async function publish() {
   if (!flowId.value) return
+
+  const missingMedia = nodes.value.filter(
+    (n) => n.type === 'send_media' && !Number(n.config.media_asset_id),
+  )
+  if (missingMedia.length) {
+    const names = missingMedia.map((n) => n.name || n.id).join(', ')
+    saveError.value = `Hay nodos Imagen/Video sin archivo: ${names}. Súbelos antes de publicar.`
+    return
+  }
+
   saving.value = true
   saveError.value = ''
   try {
@@ -1261,11 +1347,20 @@ watch(
           <span class="hint">
             {{
               selected.config.media_asset_id
-                ? `Listo · asset #${selected.config.media_asset_id} (${selected.config.media_type || 'image'})`
+                ? `Listo · asset #${selected.config.media_asset_id} (${selected.config.media_type || 'image'}) — se guardó en el flujo. Publica para WhatsApp.`
                 : 'Sube JPG/PNG/WebP o MP4 (máx. ~20 MB).'
             }}
           </span>
         </label>
+        <div v-if="mediaPreviewUrl" class="media-preview">
+          <video
+            v-if="selected.config.media_type === 'video'"
+            :src="mediaPreviewUrl"
+            controls
+            playsinline
+          />
+          <img v-else :src="mediaPreviewUrl" alt="Vista previa del media del flujo" />
+        </div>
       </template>
 
       <!-- BUTTONS -->
@@ -2001,5 +2096,23 @@ watch(
     height: 52vh;
     max-height: none;
   }
+}
+
+.media-preview {
+  margin-top: 0.35rem;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--ml-line);
+  background: var(--ml-input-bg);
+  max-height: 220px;
+}
+
+.media-preview img,
+.media-preview video {
+  display: block;
+  width: 100%;
+  max-height: 220px;
+  object-fit: contain;
+  background: #000;
 }
 </style>

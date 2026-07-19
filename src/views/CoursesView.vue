@@ -9,7 +9,7 @@ type Course = {
   price: string | number
   currency: string
   is_active: boolean
-  delivery_payload?: { url?: string }
+  delivery_payload?: { url?: string; instructions?: string }
   description?: string
   payment_qr_media_asset_id?: number | null
   payment_qr?: { id: number; mime?: string } | null
@@ -21,6 +21,8 @@ const courses = ref<Course[]>([])
 const error = ref('')
 const qrBusyId = ref<number | null>(null)
 const qrMsg = ref('')
+const editingId = ref<number | null>(null)
+const busyId = ref<number | null>(null)
 
 const form = reactive({
   title: '',
@@ -30,6 +32,15 @@ const form = reactive({
   description: '',
 })
 
+function resetForm() {
+  form.title = ''
+  form.price = 49
+  form.currency = 'USD'
+  form.deliveryUrl = ''
+  form.description = ''
+  editingId.value = null
+}
+
 async function load() {
   const res = await api<{ data: Course[] }>('/courses')
   courses.value = res.data
@@ -37,25 +48,38 @@ async function load() {
 
 async function save() {
   error.value = ''
+  if (!form.title.trim()) {
+    error.value = 'El nombre es obligatorio.'
+    return
+  }
+  busyId.value = editingId.value ?? 0
   try {
-    await api('/courses', {
-      method: 'POST',
-      body: {
-        title: form.title,
-        price: form.price,
-        currency: form.currency,
-        delivery_type: 'link',
-        delivery_payload: {
-          url: form.deliveryUrl,
-          instructions: 'Usa este link para acceder a tu compra.',
-        },
-        description: form.description,
-        is_active: true,
+    const body = {
+      title: form.title.trim(),
+      price: form.price,
+      currency: form.currency,
+      delivery_type: 'link',
+      delivery_payload: {
+        url: form.deliveryUrl,
+        instructions: 'Usa este link para acceder a tu compra.',
       },
-    })
-    form.title = ''
-    form.deliveryUrl = ''
-    form.description = ''
+      description: form.description,
+      is_active: true,
+    }
+
+    if (editingId.value) {
+      await api(`/courses/${editingId.value}`, {
+        method: 'PUT',
+        body,
+      })
+    } else {
+      await api('/courses', {
+        method: 'POST',
+        body,
+      })
+    }
+
+    resetForm()
     await load()
     await store.refreshDashboardFlags()
     store.nextOnboarding()
@@ -63,6 +87,34 @@ async function save() {
     setTimeout(() => (saved.value = false), 2200)
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'No se pudo guardar'
+  } finally {
+    busyId.value = null
+  }
+}
+
+function startEdit(course: Course) {
+  editingId.value = course.id
+  form.title = course.title
+  form.price = Number(course.price)
+  form.currency = course.currency || 'USD'
+  form.deliveryUrl = course.delivery_payload?.url || ''
+  form.description = course.description || ''
+  error.value = ''
+  qrMsg.value = ''
+}
+
+async function removeCourse(course: Course) {
+  if (!window.confirm(`¿Eliminar el producto “${course.title}”?`)) return
+  busyId.value = course.id
+  error.value = ''
+  try {
+    await api(`/courses/${course.id}`, { method: 'DELETE' })
+    if (editingId.value === course.id) resetForm()
+    await load()
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : 'No se pudo eliminar'
+  } finally {
+    busyId.value = null
   }
 }
 
@@ -106,7 +158,7 @@ onMounted(load)
 
     <div class="grid">
       <form class="ml-card form ml-rise" @submit.prevent="save">
-        <h2>Crear producto</h2>
+        <h2>{{ editingId ? 'Editar producto' : 'Crear producto' }}</h2>
         <label>
           <span class="ml-label">Nombre</span>
           <input v-model="form.title" class="ml-input" placeholder="Ej: Mentoría 1:1" required />
@@ -140,7 +192,14 @@ onMounted(load)
             placeholder="Qué incluye el producto"
           />
         </label>
-        <button class="ml-btn ml-btn-primary" type="submit">Guardar producto</button>
+        <div class="form-actions">
+          <button class="ml-btn ml-btn-primary" type="submit" :disabled="busyId !== null">
+            {{ editingId ? 'Guardar cambios' : 'Guardar producto' }}
+          </button>
+          <button v-if="editingId" class="ml-btn ghost" type="button" @click="resetForm">
+            Cancelar
+          </button>
+        </div>
         <p v-if="saved" class="ok">✓ Producto guardado.</p>
         <p v-if="error" class="err">{{ error }}</p>
         <p v-if="qrMsg" class="ok">{{ qrMsg }}</p>
@@ -150,7 +209,22 @@ onMounted(load)
         <h2>Tus productos</h2>
         <article v-for="course in courses" :key="course.id" class="item">
           <div class="item-main">
-            <strong>{{ course.title }}</strong>
+            <div class="item-head">
+              <strong>{{ course.title }}</strong>
+              <div class="item-actions">
+                <button class="ml-btn ghost sm" type="button" @click="startEdit(course)">
+                  Editar
+                </button>
+                <button
+                  class="ml-btn danger sm"
+                  type="button"
+                  :disabled="busyId === course.id"
+                  @click="removeCourse(course)"
+                >
+                  Eliminar
+                </button>
+              </div>
+            </div>
             <p>{{ course.price }} {{ course.currency }}</p>
             <div class="qr-row">
               <label class="qr-upload">
@@ -206,6 +280,11 @@ onMounted(load)
   display: grid;
   gap: 0.85rem;
 }
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
 .row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -224,6 +303,18 @@ onMounted(load)
 .item-main {
   display: grid;
   gap: 0.35rem;
+  flex: 1;
+}
+.item-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+.item-actions {
+  display: flex;
+  gap: 0.35rem;
+  flex-shrink: 0;
 }
 .item p {
   margin: 0;
@@ -267,5 +358,20 @@ onMounted(load)
 .err {
   color: var(--ml-crimson);
   margin: 0;
+}
+.ml-btn.ghost {
+  background: transparent;
+  border: 1px solid var(--ml-line);
+  color: var(--ml-ink);
+}
+.ml-btn.danger {
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--ml-crimson) 45%, transparent);
+  color: var(--ml-crimson);
+}
+.ml-btn.sm {
+  padding: 0.28rem 0.65rem;
+  font-size: 0.78rem;
+  border-radius: 999px;
 }
 </style>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useAppStore } from '@/stores/app'
-import { api } from '@/api/client'
+import { api, API_URL } from '@/api/client'
 
 type Instance = {
   id: number
@@ -23,10 +23,12 @@ type ChatMsg = {
   created_at?: string
   status?: string
   preview_url?: string
+  media_asset_id?: number | null
   payload?: {
     buttons?: Array<{ id?: string; label?: string; display?: string }>
     footer?: string
     preview?: boolean
+    media_asset_id?: number
   } | null
 }
 
@@ -52,6 +54,8 @@ const draft = ref('')
 const messages = ref<ChatMsg[]>([])
 const threadEl = ref<HTMLElement | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
+const mediaBlobUrls = ref<Record<string, string>>({})
+const mediaBlobList: string[] = []
 
 const businessName = computed(() => store.user?.tenant?.name || 'LunaMarket')
 const botLabel = computed(() => 'Asistente')
@@ -88,8 +92,43 @@ async function scrollThread() {
 }
 
 function applyThread(list: ChatMsg[]) {
-  messages.value = list
+  messages.value = list.map((m) => {
+    const mediaId = Number(m.media_asset_id || m.payload?.media_asset_id || 0)
+    if (mediaId > 0 && !m.preview_url && mediaBlobUrls.value[`a${mediaId}`]) {
+      return { ...m, media_asset_id: mediaId, preview_url: mediaBlobUrls.value[`a${mediaId}`] }
+    }
+    return mediaId > 0 ? { ...m, media_asset_id: mediaId } : m
+  })
   void scrollThread()
+  void hydrateMediaPreviews(messages.value)
+}
+
+async function hydrateMediaPreviews(list: ChatMsg[]) {
+  const token = localStorage.getItem('ml_token')
+  for (const m of list) {
+    const mediaId = Number(m.media_asset_id || m.payload?.media_asset_id || 0)
+    if (mediaId <= 0) continue
+    const key = `a${mediaId}`
+    if (mediaBlobUrls.value[key]) {
+      m.preview_url = mediaBlobUrls.value[key]
+      continue
+    }
+    if (m.preview_url?.startsWith('data:')) continue
+    try {
+      const res = await fetch(`${API_URL}/media-assets/${mediaId}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
+      if (!res.ok) continue
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      mediaBlobList.push(url)
+      mediaBlobUrls.value[key] = url
+      m.preview_url = url
+    } catch {
+      // ignore
+    }
+  }
+  messages.value = [...messages.value]
 }
 
 async function load() {
@@ -309,7 +348,7 @@ function formatTime(iso?: string) {
 }
 
 function isImageMsg(m: ChatMsg) {
-  return m.type === 'image' || Boolean(m.preview_url)
+  return m.type === 'image' || m.type === 'video' || Boolean(m.preview_url)
 }
 
 function messageButtons(m: ChatMsg) {
@@ -430,13 +469,22 @@ onMounted(load)
             :class="m.direction === 'inbound' ? 'from-customer' : 'from-bot'"
           >
             <div class="wa-bubble" :class="{ 'has-media': isImageMsg(m) }">
-              <img
-                v-if="m.preview_url"
+              <video
+                v-if="m.type === 'video' && m.preview_url"
                 :src="m.preview_url"
-                alt="Comprobante"
+                class="wa-media"
+                controls
+                playsinline
+              />
+              <img
+                v-else-if="m.preview_url"
+                :src="m.preview_url"
+                alt="Media"
                 class="wa-media"
               />
-              <p v-if="isImageMsg(m) && !m.preview_url" class="wa-media-fallback">🖼 Comprobante</p>
+              <p v-if="isImageMsg(m) && !m.preview_url" class="wa-media-fallback">
+                {{ m.type === 'video' ? '🎬 Video' : '🖼 Imagen' }}
+              </p>
               <p v-if="m.body && !isImageMsg(m)">{{ m.body }}</p>
               <p v-else-if="m.body && m.preview_url" class="wa-caption">{{ m.body }}</p>
               <p v-else-if="!m.body && !isImageMsg(m) && m.type !== 'buttons'">[{{ m.type }}]</p>
