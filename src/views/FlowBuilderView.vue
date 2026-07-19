@@ -563,15 +563,15 @@ function buildSavePayload() {
   return {
     start_node_key: start?.id ?? null,
     nodes: nodes.value.map((n) => {
-      const config = { ...n.config }
-      if (config.media_asset_id != null && config.media_asset_id !== '') {
-        config.media_asset_id = Number(config.media_asset_id)
+      const config: NodeConfig = { ...n.config }
+      if (config.media_asset_id != null) {
+        config.media_asset_id = Number(config.media_asset_id) || null
       }
-      if (config.qr_media_asset_id != null && config.qr_media_asset_id !== '') {
-        config.qr_media_asset_id = Number(config.qr_media_asset_id)
+      if (config.qr_media_asset_id != null) {
+        config.qr_media_asset_id = Number(config.qr_media_asset_id) || null
       }
-      if (config.course_id != null && config.course_id !== '') {
-        config.course_id = Number(config.course_id)
+      if (config.course_id != null) {
+        config.course_id = Number(config.course_id) || null
       }
       return {
         node_key: n.id,
